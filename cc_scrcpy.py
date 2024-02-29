@@ -144,6 +144,14 @@ class CCScrcpy(QMainWindow):
             self.__device_screen_col
         )
 
+        # self.device_bitrate = [4000000, 8000000, 10000000, 20000000, 40000000]
+        # for i in range(len(self.device_col)):
+        #     self.ui.left_info_device_screen_col.addItem(f"{self.device_col[i]}")
+        # self.ui.left_info_device_screen_col.setCurrentIndex(4)
+        # self.ui.left_info_device_screen_col.currentIndexChanged.connect(
+        #     self.__device_screen_col
+        # )
+
         # 帧更新信号
         for i in range(len(self.frames)):
             self.frames[i].set_connect(self.on_post)
@@ -152,7 +160,6 @@ class CCScrcpy(QMainWindow):
         self.reflash_device()
 
     def get_device(self):
-        # print(f'adb device size:{len(adb.device_list())}')
         devices_list = adb.device_list()
         devices = [
             Device(
@@ -225,7 +232,7 @@ class CCScrcpy(QMainWindow):
         pix = QPixmap(image)
         pix.setDevicePixelRatio(1 / ratio)
         screen_ui.setPixmap(pix)
-        self.resize(1, 1)
+        # self.resize(1, 1)         
 
     def on_mouse_event(self, action=scrcpy.ACTION_DOWN):
         def handler1(device: Device):

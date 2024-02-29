@@ -76,6 +76,13 @@ class Ui_MainWindow(object):
         self.left_info_device_screen_col = QComboBox()
         layout.addWidget(self.left_info_device_screen_col)
         self.left_info_device_control_layout.addLayout(layout)
+
+        # layout = QHBoxLayout()
+        # layout.addWidget(QLabel(f'质量'))
+        # self.left_info_device_screen_bitrate = QComboBox()
+        # layout.addWidget(self.left_info_device_screen_bitrate)
+        # self.left_info_device_control_layout.addLayout(layout)
+        
         self.left_info.addStretch(-1)  # 空白占用空间，不拉伸
 
         # 右边栏：显示所有手机投屏
@@ -182,7 +189,7 @@ class Ui_MainWindow(object):
                 f"【{device.index+1:02d}】序列号:{device.serial}"
             )
             self.device_screen_list_box.append(device_screen_box)
-            
+
             device_screen_layout = QVBoxLayout()
             device_screen_layout.setContentsMargins(0, 0, 0, 0)
             device_screen_box.setLayout(device_screen_layout)
