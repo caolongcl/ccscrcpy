@@ -76,3 +76,6 @@ class Device:
     
     def on_click_screen(self):
         self.client.control.back_or_turn_screen_on()
+    
+    def on_send_text(self, str):
+        self.client.control.text(str)

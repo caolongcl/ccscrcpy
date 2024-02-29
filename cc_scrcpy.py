@@ -14,14 +14,14 @@ from model.device import *
 
 def map_code(code):
     """
-    Map qt keycode ti android keycode
+    Map qt keycode to android keycode
 
     Args:
         code: qt keycode
         android keycode, -1 if not founded
     """
 
-    print(f"keycode: {code}")
+    # print(f"keycode: {code}")
 
     if code == -1:
         return -1
@@ -152,6 +152,9 @@ class CCScrcpy(QMainWindow):
         #     self.__device_screen_col
         # )
 
+        # 输入框
+        self.ui.right_device_text_input_send_selected.clicked.connect(self.__on_text_input)
+
         # 帧更新信号
         for i in range(len(self.frames)):
             self.frames[i].set_connect(self.on_post)
@@ -176,6 +179,12 @@ class CCScrcpy(QMainWindow):
     def reflash_device_screen(self):
         pass
 
+    def __on_text_input(self):
+        self.devices[0].on_send_text(self.__get_device_control_text_input())
+
+    def __get_device_control_text_input(self):
+        return self.ui.right_device_text_input.toPlainText()
+    
     def __device_screen_scale_ratio(self, index):
         self.device_max_size = self.default_device_max_size * self.scale_ratio[index]
         self.__reflash_device_screen_on()
@@ -254,6 +263,7 @@ class CCScrcpy(QMainWindow):
         def handler1(device: Device):
             def handler(evt: QKeyEvent):
                 code = map_code(evt.key())
+                # print(f'key {evt.text()}')
                 if code != -1:
                     device.client.control.keycode(code, action)
 

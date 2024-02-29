@@ -86,16 +86,41 @@ class Ui_MainWindow(object):
         self.left_info.addStretch(-1)  # 空白占用空间，不拉伸
 
         # 右边栏：显示所有手机投屏
-        self.right_device_screen_group_box = QGroupBox()
+        self.right_device_screen_group_box = QGroupBox(f'设备投屏')
+        layout = QVBoxLayout()
+        layout.setContentsMargins(2, 2, 2, 2)
+        self.right_device_screen_group_box.setLayout(layout)
         self.main_layout.addWidget(self.right_device_screen_group_box)
+        
         self.right_device_screen_grid = QGridLayout()
-        self.right_device_screen_group_box.setLayout(self.right_device_screen_grid)
+        layout.addLayout(self.right_device_screen_grid)
         self.right_device_screen_grid.setObjectName("device_screen_grid")
         self.right_device_screen_grid.setSpacing(4)
-        self.right_device_screen_grid.setContentsMargins(4, 4, 4, 4)
+        self.right_device_screen_grid.setContentsMargins(2, 2, 2, 2)
 
         self.device_screen_list = []
         self.device_screen_list_box = []
+
+        layout.addItem(QSpacerItem(
+            0, 0, hData=QSizePolicy.Policy.Expanding, vData=QSizePolicy.Policy.Expanding
+        ))
+        # 右边控制
+        group_box = QGroupBox(f'设备控制')
+        layout1 = QVBoxLayout()
+        layout1.setContentsMargins(2, 2, 2, 2)
+        group_box.setLayout(layout1)
+        layout.addWidget(group_box, alignment=Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft)
+
+        # 输入框
+        text_input_layout = QHBoxLayout()
+        text_input_layout.setSpacing(2)
+        text_input_layout.setContentsMargins(2, 2, 2, 2)
+        layout1.addLayout(text_input_layout)
+        self.right_device_text_input = QTextEdit()
+        self.right_device_text_input.setFixedSize(400, 100)
+        text_input_layout.addWidget(self.right_device_text_input)
+        self.right_device_text_input_send_selected = QPushButton(f'发送给选中设备')
+        text_input_layout.addWidget(self.right_device_text_input_send_selected)
 
         # 设置全部布局
         MainWindow.setCentralWidget(self.centralwidget)
