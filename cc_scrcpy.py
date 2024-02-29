@@ -117,25 +117,39 @@ class CCScrcpy(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.device_max_size = 240
-        self.device_max_col = 3
+        self.default_device_max_size = 240
+        self.device_max_size = self.default_device_max_size
+        self.device_max_col = 5
+
         self.devices, self.frames = self.get_device()
 
+        self.stop_render_screen = False
+
         print(f"device {len(self.devices)}")
+
+        # device 控制属性
+        self.scale_ratio = [0.2, 0.4, 0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0]
+        for i in range(len(self.scale_ratio)):
+            self.ui.left_info_device_screen_scale.addItem(f"{self.scale_ratio[i]}")
+        self.ui.left_info_device_screen_scale.setCurrentIndex(4)
+        self.ui.left_info_device_screen_scale.currentIndexChanged.connect(
+            self.__device_screen_scale_ratio
+        )
+
+        self.device_col = [1,2,3,4,5,6,7,8,9,10]
+        for i in range(len(self.device_col)):
+            self.ui.left_info_device_screen_col.addItem(f"{self.device_col[i]}")
+        self.ui.left_info_device_screen_col.setCurrentIndex(4)
+        self.ui.left_info_device_screen_col.currentIndexChanged.connect(
+            self.__device_screen_col
+        )
 
         # 帧更新信号
         for i in range(len(self.frames)):
             self.frames[i].set_connect(self.on_post)
 
         self.ui.update_left_info_device_grid(self.devices)
-        self.ui.update_right_device_screen_grid(
-            self.devices,
-            self.on_mouse_event(scrcpy.ACTION_DOWN),
-            self.on_mouse_event(scrcpy.ACTION_MOVE),
-            self.on_mouse_event(scrcpy.ACTION_UP),
-            self.on_key_event(scrcpy.ACTION_DOWN),
-            self.on_key_event(scrcpy.ACTION_UP),
-        )
+        self.reflash_device()
 
     def get_device(self):
         # print(f'adb device size:{len(adb.device_list())}')
@@ -155,15 +169,42 @@ class CCScrcpy(QMainWindow):
     def reflash_device_screen(self):
         pass
 
+    def __device_screen_scale_ratio(self, index):
+        self.device_max_size = self.default_device_max_size * self.scale_ratio[index]
+        self.__reflash_device_screen_on()
+    
+    def __device_screen_col(self, index):
+        last_max_col = self.device_max_col
+        self.device_max_col = self.device_col[index]
+        if self.device_max_col >= len(self.devices) and last_max_col >= len(self.devices):
+            return
+        self.reflash_device()
+        self.__reflash_device_screen_on()
+
     def reflash_device(self):
-        self.devices = self.get_device()
+        self.stop_render_screen = True
+        self.ui.update_right_device_screen_grid(
+            self.devices,
+            self.device_max_col,
+            self.on_mouse_event(scrcpy.ACTION_DOWN),
+            self.on_mouse_event(scrcpy.ACTION_MOVE),
+            self.on_mouse_event(scrcpy.ACTION_UP),
+            self.on_key_event(scrcpy.ACTION_DOWN),
+            self.on_key_event(scrcpy.ACTION_UP),
+        )
+        self.stop_render_screen = False
+    
+    def __reflash_device_screen_on(self):
+        for i in range(len(self.devices)):
+            self.devices[i].on_click_screen()
 
     def on_init(self, device: Device):
         print(f"on_init {device.client.device_name}")
 
     def on_frame(self, device: Device, frame):
-        # print(f"on_frame {device.client.device_name}")
         app.processEvents()
+        if self.stop_render_screen:
+            return
         self.frames[device.index].post(frame)
 
     def on_post(self, device: Device, frame):
@@ -184,7 +225,7 @@ class CCScrcpy(QMainWindow):
         pix = QPixmap(image)
         pix.setDevicePixelRatio(1 / ratio)
         screen_ui.setPixmap(pix)
-        # self.resize(1, 1)
+        self.resize(1, 1)
 
     def on_mouse_event(self, action=scrcpy.ACTION_DOWN):
         def handler1(device: Device):

@@ -61,9 +61,6 @@ class Device:
         self.started = False
         self.client.stop()
         self.thread.join()
-    
-    def on_click_screen_on(self):
-        self.client.control.back_or_turn_screen_on()
 
     def on_click_home(self):
         self.client.control.keycode(scrcpy.KEYCODE_HOME, scrcpy.ACTION_DOWN)

@@ -60,6 +60,22 @@ class Ui_MainWindow(object):
 
         self.device_list = []
 
+        # 设备控制
+        self.left_info_device_control_group_box = QGroupBox(f"属性")
+        self.left_info_device_control_layout = QVBoxLayout()
+        self.left_info_device_control_group_box.setLayout(self.left_info_device_control_layout)
+        self.left_info.addWidget(self.left_info_device_control_group_box)
+        layout = QHBoxLayout()
+        layout.addWidget(QLabel(f'缩放'))
+        self.left_info_device_screen_scale = QComboBox()
+        layout.addWidget(self.left_info_device_screen_scale)
+        self.left_info_device_control_layout.addLayout(layout)
+
+        layout = QHBoxLayout()
+        layout.addWidget(QLabel(f'列数'))
+        self.left_info_device_screen_col = QComboBox()
+        layout.addWidget(self.left_info_device_screen_col)
+        self.left_info_device_control_layout.addLayout(layout)
         self.left_info.addStretch(-1)  # 空白占用空间，不拉伸
 
         # 右边栏：显示所有手机投屏
@@ -72,6 +88,7 @@ class Ui_MainWindow(object):
         self.right_device_screen_grid.setContentsMargins(4, 4, 4, 4)
 
         self.device_screen_list = []
+        self.device_screen_list_box = []
 
         # 设置全部布局
         MainWindow.setCentralWidget(self.centralwidget)
@@ -133,26 +150,26 @@ class Ui_MainWindow(object):
     def update_right_device_screen_grid(
         self,
         device_model_list: list[Device],
+        device_col,
         mousePressEvent: Callable[..., Any],
         mouseMoveEvent: Callable[..., Any],
         mouseReleaseEvent: Callable[..., Any],
         keyPressEvent: Callable[..., Any],
         keyReleaseEvent: Callable[..., Any],
     ):
-        if len(device_model_list) <= 0:
-            print(f"update_right_device_screen_grid empty device")
-            return
-
-        if len(self.device_screen_list) > 0:
-            for i in range(len(self.device_screen_list)):
-                self.right_device_screen_grid.removeWidget(self.device_screen_list[i])
+        if len(self.device_screen_list_box) > 0:
+            for i in range(len(self.device_screen_list_box)):
+                self.right_device_screen_grid.removeWidget(self.device_screen_list_box[i])
+                self.device_screen_list_box[i].deleteLater()
             self.right_device_screen_grid.removeItem(
                 self.right_device_screen_grid_space_item
             )
+            # self.right_device_screen_grid_space_item.deleteLater()
         self.device_screen_list = []
+        self.device_screen_list_box = []
 
         # 更新
-        max_col = 5
+        max_col = device_col
         row = 0
         col = 0
 
@@ -164,6 +181,8 @@ class Ui_MainWindow(object):
             device_screen_box = QGroupBox(
                 f"【{device.index+1:02d}】序列号:{device.serial}"
             )
+            self.device_screen_list_box.append(device_screen_box)
+            
             device_screen_layout = QVBoxLayout()
             device_screen_layout.setContentsMargins(0, 0, 0, 0)
             device_screen_box.setLayout(device_screen_layout)
