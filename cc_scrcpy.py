@@ -9,6 +9,8 @@ from PySide6.QtCore import *
 
 # cc
 from cc_ui import *
+from view.cc_left_view import LeftView
+from view.cc_right_view import RightView
 from model.device import *
 
 
@@ -91,29 +93,11 @@ def map_code(code):
     return -1
 
 
-if not QApplication.instance():
-    app = QApplication([])
-else:
-    app = QApplication.instance()
-
-
-class Frame(QObject):
-    frame_signal = Signal(Device, object)
-
-    def __init__(self, device) -> None:
-        super(Frame, self).__init__()
-        self.device = device
-
-    def set_connect(self, slot):
-        self.frame_signal.connect(slot)
-
-    def post(self, frame):
-        self.frame_signal.emit(self.device, frame)
-
-
 class CCScrcpy(QMainWindow):
-    def __init__(self):
+    def __init__(self, app: QApplication):
         super(CCScrcpy, self).__init__()
+
+        self.app = app
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -121,136 +105,57 @@ class CCScrcpy(QMainWindow):
         self.device_max_size = self.default_device_max_size
         self.device_max_col = 5
 
-        self.devices, self.frames = self.get_device()
-
         self.stop_render_screen = False
 
-        print(f"device {len(self.devices)}")
-
-        # device 控制属性
-        self.scale_ratio = [0.2, 0.4, 0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0]
-        for i in range(len(self.scale_ratio)):
-            self.ui.left_info_device_screen_scale.addItem(f"{self.scale_ratio[i]}")
-        self.ui.left_info_device_screen_scale.setCurrentIndex(4)
-        self.ui.left_info_device_screen_scale.currentIndexChanged.connect(
-            self.__device_screen_scale_ratio
+        # 设备管理
+        self.device_manager = DeviceManager(
+            self.__on_init, self.__on_frame, self.__on_post
         )
 
-        self.device_col = [1,2,3,4,5,6,7,8,9,10]
-        for i in range(len(self.device_col)):
-            self.ui.left_info_device_screen_col.addItem(f"{self.device_col[i]}")
-        self.ui.left_info_device_screen_col.setCurrentIndex(4)
-        self.ui.left_info_device_screen_col.currentIndexChanged.connect(
-            self.__device_screen_col
+        # 初始化菜单
+        self.ui.menu_bar.add_device_col_menu(self.__device_screen_col)
+        self.ui.menu_bar.add_device_scale_ratio_menu(self.__device_screen_scale_ratio)
+
+        # 初始化 view
+        self.ui.left_view.attach(self.device_manager)
+        self.ui.right_view.attach(
+            self.device_manager, self.__on_mouse_event, self.__on_key_event
         )
 
-        # self.device_bitrate = [4000000, 8000000, 10000000, 20000000, 40000000]
-        # for i in range(len(self.device_col)):
-        #     self.ui.left_info_device_screen_col.addItem(f"{self.device_col[i]}")
-        # self.ui.left_info_device_screen_col.setCurrentIndex(4)
-        # self.ui.left_info_device_screen_col.currentIndexChanged.connect(
-        #     self.__device_screen_col
-        # )
+        # 初始化设备列表
+        self.ui.left_view.update_device_num()
+        self.ui.left_view.update_device_no_list()
 
-        # 输入框
-        self.ui.right_device_text_input_send_selected.clicked.connect(self.__on_text_input)
+        self.ui.right_view.update_devices_by_col(self.device_max_col)
 
-        # 帧更新信号
-        for i in range(len(self.frames)):
-            self.frames[i].set_connect(self.on_post)
+        self.device_manager.start()
 
-        self.ui.update_left_info_device_grid(self.devices)
-        self.reflash_device()
+    def __on_init(self, device_index):
+        print(f"on_init {device_index}")
 
-    def get_device(self):
-        devices_list = adb.device_list()
-        devices = [
-            Device(
-                serial=devices_list[i].serial,
-                index=i,
-                on_init=self.on_init,
-                on_frame=self.on_frame,
-            )
-            for i in range(len(devices_list))
-        ]
-        frames = [Frame(device=devices[i]) for i in range(len(devices_list))]
-        return devices, frames
-
-    def reflash_device_screen(self):
-        pass
-
-    def __on_text_input(self):
-        self.devices[0].on_send_text(self.__get_device_control_text_input())
-
-    def __get_device_control_text_input(self):
-        return self.ui.right_device_text_input.toPlainText()
-    
-    def __device_screen_scale_ratio(self, index):
-        self.device_max_size = self.default_device_max_size * self.scale_ratio[index]
-        self.__reflash_device_screen_on()
-    
-    def __device_screen_col(self, index):
-        last_max_col = self.device_max_col
-        self.device_max_col = self.device_col[index]
-        if self.device_max_col >= len(self.devices) and last_max_col >= len(self.devices):
-            return
-        self.reflash_device()
-        self.__reflash_device_screen_on()
-
-    def reflash_device(self):
-        self.stop_render_screen = True
-        self.ui.update_right_device_screen_grid(
-            self.devices,
-            self.device_max_col,
-            self.on_mouse_event(scrcpy.ACTION_DOWN),
-            self.on_mouse_event(scrcpy.ACTION_MOVE),
-            self.on_mouse_event(scrcpy.ACTION_UP),
-            self.on_key_event(scrcpy.ACTION_DOWN),
-            self.on_key_event(scrcpy.ACTION_UP),
-        )
-        self.stop_render_screen = False
-    
-    def __reflash_device_screen_on(self):
-        for i in range(len(self.devices)):
-            self.devices[i].on_click_screen()
-
-    def on_init(self, device: Device):
-        print(f"on_init {device.client.device_name}")
-
-    def on_frame(self, device: Device, frame):
-        app.processEvents()
+    def __on_frame(self, device_index, frame):
+        # print(f'__on_frame {device_index}')
+        self.app.processEvents()
         if self.stop_render_screen:
             return
-        self.frames[device.index].post(frame)
+        self.device_manager.post_frame(device_index, frame)
 
-    def on_post(self, device: Device, frame):
-        self.display_device_screen(
+    def __on_post(self, device_index, frame):
+        # print(f'__on_post {device_index}')
+        self.ui.right_view.render_device_screen(
+            device_index,
+            self.device_manager.get_device_ratio(self.device_max_size, device_index),
             frame,
-            self.__get_device_ratio(device),
-            self.ui.device_screen_list[device.index],
         )
 
-    def display_device_screen(self, frame, ratio, screen_ui):
-        image = QImage(
-            frame,
-            frame.shape[1],
-            frame.shape[0],
-            frame.shape[1] * 3,
-            QImage.Format_BGR888,
-        )
-        pix = QPixmap(image)
-        pix.setDevicePixelRatio(1 / ratio)
-        screen_ui.setPixmap(pix)
-        # self.resize(1, 1)         
-
-    def on_mouse_event(self, action=scrcpy.ACTION_DOWN):
+    def __on_mouse_event(self, action=scrcpy.ACTION_DOWN):
         def handler1(device: Device):
             def handler(evt: QMouseEvent):
                 # focused_widget = QApplication.focusWidget()
                 # if focused_widget is not None:
                 #     focused_widget.clearFocus()
 
-                ratio = self.__get_device_ratio(device)
+                ratio = self.device_manager.get_device_ratio(self.device_max_size, device.index)
                 device.client.control.touch(
                     evt.position().x() / ratio, evt.position().y() / ratio, action
                 )
@@ -259,7 +164,7 @@ class CCScrcpy(QMainWindow):
 
         return handler1
 
-    def on_key_event(self, action=scrcpy.ACTION_DOWN):
+    def __on_key_event(self, action=scrcpy.ACTION_DOWN):
         def handler1(device: Device):
             def handler(evt: QKeyEvent):
                 code = map_code(evt.key())
@@ -271,29 +176,41 @@ class CCScrcpy(QMainWindow):
 
         return handler1
 
+    def __device_screen_scale_ratio(self, ratio):
+        self.device_max_size = self.default_device_max_size * ratio
+        self.device_manager.refresh_device_screen_on()
+    
+    def __device_screen_col(self, col):
+        print(f'col {col}')
+        devices_num = self.device_manager.get_device_num()
+        last_max_col = self.device_max_col
+        self.device_max_col = col
+        if self.device_max_col >= devices_num and last_max_col >= devices_num:
+            return
+        # 更新
+        self.stop_render_screen = True
+        self.ui.right_view.update_devices_by_col(self.device_max_col)
+        self.stop_render_screen = False
+        self.device_manager.refresh_device_screen_on()
+
     def start(self):
-        for i in range(len(self.devices)):
-            self.devices[i].start()
+        # 开始投屏
+        self.device_manager.start()
 
     def closeEvent(self, _):
         print(f"app close")
-        for i in range(len(self.devices)):
-            self.devices[i].exit()
-
-    def __get_device_ratio(self, device: Device):
-        ratio = 1
-        if device.client.resolution[0] < device.client.resolution[1]:
-            # 竖屏
-            ratio = self.device_max_size / device.client.resolution[0]
-        else:
-            ratio = self.device_max_size / device.client.resolution[1]
-        return ratio
+        self.device_manager.stop()
 
 
 def main():
-    cc = CCScrcpy()
+    if not QApplication.instance():
+        app = QApplication([])
+    else:
+        app = QApplication.instance()
+
+    cc = CCScrcpy(app)
     cc.show()
-    cc.start()
+    # cc.start()
     app.exec()
 
 
