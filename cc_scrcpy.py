@@ -1,4 +1,5 @@
 import threading
+import time
 from typing import Tuple
 
 import scrcpy
@@ -9,8 +10,7 @@ from PySide6.QtCore import *
 
 # cc
 from cc_ui import *
-from view.cc_left_view import LeftView
-from view.cc_right_view import RightView
+from view.cc_frame import CustomDeviceEvent
 from model.device import *
 
 
@@ -130,6 +130,10 @@ class CCScrcpy(QMainWindow):
         self.ui.right_view.update_devices_by_col(self.device_max_col)
         self.resize(1, 1)
 
+        # 自定义事件
+        # self.device_copy_event = CustomDeviceEvent()
+        # self.device_copy_event.set_connect(self.__custom_copy)
+
         self.device_manager.start()
 
     def __on_init(self, device_index):
@@ -157,7 +161,9 @@ class CCScrcpy(QMainWindow):
                 # if focused_widget is not None:
                 #     focused_widget.clearFocus()
 
-                ratio = self.device_manager.get_device_ratio(self.device_max_size, device.index)
+                ratio = self.device_manager.get_device_ratio(
+                    self.device_max_size, device.index
+                )
                 device.client.control.touch(
                     evt.position().x() / ratio, evt.position().y() / ratio, action
                 )
@@ -169,22 +175,74 @@ class CCScrcpy(QMainWindow):
     def __on_key_event(self, action=scrcpy.ACTION_DOWN):
         def handler1(device: Device):
             def handler(evt: QKeyEvent):
-                code = map_code(evt.key())
-                # print(f'key {evt.text()}')
-                if code != -1:
-                    device.client.control.keycode(code, action)
+                # 处理特殊键
+                # print(f"modify {evt.modifiers()}, keycode {evt.key()} action {action}")
+                if (
+                    evt.modifiers() == Qt.KeyboardModifier.ControlModifier
+                    and evt.key() == Qt.Key.Key_C
+                ):
+                    # print(f"device copy to clipboard")
+                    device.client.control.keycode(scrcpy.KEYCODE_COPY, action)
+                    time.sleep(0.3) #
+                    text_from_dclipboard = (
+                        device.client.control.get_clipboard()
+                    )
+                    # print(f"copy:{text_from_dclipboard}")
+                    self.__set_clipboard_text(text_from_dclipboard)
+                elif (
+                    evt.modifiers() == Qt.KeyboardModifier.ControlModifier
+                    and evt.key() == Qt.Key.Key_V
+                    and action == scrcpy.ACTION_DOWN
+                ):
+                    text_from_qclipboard = self.__get_clipboard_text()
+                    # print(f"text_from_qclipboard: {text_from_qclipboard}")
+                    device.client.control.set_clipboard(text_from_qclipboard, True)
+                    # device.client.control.keycode(scrcpy.KEYCODE_PASTE, action)
+                elif (
+                    evt.modifiers() == Qt.KeyboardModifier.ControlModifier
+                    and evt.key() == Qt.Key.Key_X
+                    and action == scrcpy.ACTION_DOWN
+                ):
+                    # print(f"device cut to clipboard")
+                    device.client.control.keycode(scrcpy.KEYCODE_CUT, action)
+                    time.sleep(0.3) #
+                    text_from_dclipboard = (
+                        device.client.control.get_clipboard()
+                    )
+                    # print(f"copy:{text_from_dclipboard}")
+                    self.__set_clipboard_text(text_from_dclipboard)
+                else:
+                    code = map_code(evt.key())
+                    # print(f'key {evt.text()}')
+                    if code != -1:
+                        device.client.control.keycode(code, action)
 
             return handler
 
         return handler1
-    
+
+    def __custom_copy(self, device_index):
+        time.sleep(1)
+        device = self.device_manager.get_devices()[device_index]
+        text_from_dclipboard = device.client.control.get_clipboard()
+        print(f"copy:{text_from_dclipboard}")
+        self.__set_clipboard_text(text_from_dclipboard)
+
+    def __get_clipboard_text(self):
+        clipboard = QApplication.clipboard()
+        return clipboard.text()
+
+    def __set_clipboard_text(self, text):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+
     def __request_screen_resize(self):
-        self.resize(1,1)
+        self.resize(1, 1)
 
     def __device_screen_scale_ratio(self, ratio):
         self.device_max_size = self.default_device_max_size * ratio
         self.device_manager.refresh_device_screen_on()
-    
+
     def __device_screen_col(self, col):
         devices_num = self.device_manager.get_device_num()
         last_max_col = self.device_max_col
