@@ -61,6 +61,11 @@ class MenuBar(QMenuBar):
         self.menu_settings = QMenu(f"设置", self)
         self.addAction(self.menu_settings.menuAction())
 
+        self.menu_about = QMenu(f"关于", self)
+        self.addAction(self.menu_about.menuAction())
+        about_version = QAction("版本 v0.1.0", self)
+        self.menu_about.addAction(about_version)
+
     def add_device_col_menu(self, on_col_changed: Callable[..., Any]):
         # device col
         self.device_col = _DeviceColMenu(self.menu_settings, on_col_changed)

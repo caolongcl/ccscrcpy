@@ -46,7 +46,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(
-            QCoreApplication.translate("MainWindow", "CCScrcpy v0.1.0", None)
+            QCoreApplication.translate("MainWindow", "CCScrcpy", None)
         )
 
     # retranslateUi
