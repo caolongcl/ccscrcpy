@@ -51,6 +51,7 @@ class _DeviceNoView(QGroupBox):
 
     def update_list(self, devices: list[Device]):
         ViewClear().clear(self.device_no_grid)
+        self.device_no_list = []
 
         # 更新
         max_col = 3
@@ -62,6 +63,7 @@ class _DeviceNoView(QGroupBox):
             row = i // max_col
             col = i % max_col
             device_label = QLabel(f"【{i+1:02d}】")
+            self.device_no_list.append(device_label)
             device_label.setFixedSize(40, 30)
             self.device_no_grid.addWidget(
                 device_label,
@@ -81,6 +83,9 @@ class _DeviceNoView(QGroupBox):
         #         col,
         #         Qt.AlignmentFlag.AlignCenter,
         #     )
+
+    def update_device_name(self, device: Device):
+        self.device_no_list[device.index].setToolTip(f"序列号:{device.serial}")
 
 
 ##############################
@@ -112,3 +117,8 @@ class LeftView(QGroupBox):
 
     def update_device_no_list(self):
         self.device_no_view.update_list(self.device_manager.get_devices())
+
+    def update_device_name(self, device_index):
+        self.device_no_view.update_device_name(
+            self.device_manager.get_devices()[device_index]
+        )

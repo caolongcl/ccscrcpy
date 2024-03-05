@@ -138,6 +138,8 @@ class CCScrcpy(QMainWindow):
 
     def __on_init(self, device_index):
         print(f"on_init {device_index}")
+        self.ui.left_view.update_device_name(device_index)
+        self.ui.right_view.update_device_name(device_index)
 
     def __on_frame(self, device_index, frame):
         # print(f'__on_frame {device_index}')

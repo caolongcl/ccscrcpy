@@ -20,7 +20,7 @@ class _DeviceScreen(QGroupBox):
         keyPressEvent: Callable[..., Any],
         keyReleaseEvent: Callable[..., Any],
     ):
-        super().__init__(f"【{device.index+1:02d}】序列号:{device.serial}")
+        super().__init__(f"【{device.index+1:02d}】序列号:{device.client.device_name}")
         self.device = device
 
         layout = QVBoxLayout()
@@ -79,6 +79,11 @@ class _DeviceScreen(QGroupBox):
         pix = QPixmap(image)
         pix.setDevicePixelRatio(1 / ratio)
         self.screen.setPixmap(pix)
+
+    def update_title(self):
+        self.setTitle(
+            f"【{self.device.index+1:02d}】设备型号:{self.device.client.device_name}"
+        )
 
 
 # 投屏列表
@@ -164,6 +169,9 @@ class _DeviceScreenGridView(QGroupBox):
     def get_screen_list(self):
         return self.device_screen_list
 
+    def update_device_name(self, device: Device):
+        self.device_screen_list[device.index].update_title()
+
 
 #####################################
 class RightView(QGroupBox):
@@ -213,3 +221,8 @@ class RightView(QGroupBox):
     def render_device_screen(self, index, ratio, frame):
         screen_list = self.device_screen_grid_view.get_screen_list()
         screen_list[index].render_frame(ratio, frame)
+
+    def update_device_name(self, device_index):
+        self.device_screen_grid_view.update_device_name(
+            self.device_manager.get_devices()[device_index]
+        )
