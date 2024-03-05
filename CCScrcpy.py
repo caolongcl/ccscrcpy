@@ -274,10 +274,11 @@ def main():
         app = QApplication([])
     else:
         app = QApplication.instance()
-
+    
+    icon = QIcon("icon.ico")
+    app.setWindowIcon(icon)
     cc = CCScrcpy(app)
     cc.show()
-    # cc.start()
     app.exec()
 
 
