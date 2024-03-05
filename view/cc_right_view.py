@@ -24,8 +24,14 @@ class _DeviceScreen(QGroupBox):
         self.device = device
 
         layout = QVBoxLayout()
+        layout.setSpacing(2)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+        self.focused = QLabel()
+        self.focused.setFixedHeight(8)
+        self.update_focused_status(False)
+        layout.addWidget(self.focused)
 
         self.screen = QLabel()  # 对外暴露
         layout.addWidget(self.screen, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -84,6 +90,12 @@ class _DeviceScreen(QGroupBox):
         self.setTitle(
             f"【{self.device.index+1:02d}】设备型号:{self.device.client.device_name}"
         )
+
+    def update_focused_status(self, focused):
+        if focused:
+            self.focused.setStyleSheet(f"background-color: rgba(0,200,0,255)")
+        else:
+            self.focused.setStyleSheet(f"background-color: grey")
 
 
 # 投屏列表
@@ -169,8 +181,11 @@ class _DeviceScreenGridView(QGroupBox):
     def get_screen_list(self):
         return self.device_screen_list
 
-    def update_device_name(self, device: Device):
-        self.device_screen_list[device.index].update_title()
+    def update_device_name(self, device_index):
+        self.device_screen_list[device_index].update_title()
+
+    def update_focused_status(self, device_index, focused):
+        self.device_screen_list[device_index].update_focused_status(focused)
 
 
 #####################################
@@ -223,6 +238,12 @@ class RightView(QGroupBox):
         screen_list[index].render_frame(ratio, frame)
 
     def update_device_name(self, device_index):
-        self.device_screen_grid_view.update_device_name(
-            self.device_manager.get_devices()[device_index]
-        )
+        self.device_screen_grid_view.update_device_name(device_index)
+
+    def update_focused_status(self, device_index):
+        devices = self.device_manager.get_devices()
+        for i in range(len(devices)):
+            # print(f'ddsf device_index == i {device_index}=={i}')
+            self.device_screen_grid_view.update_focused_status(
+                i, device_index == i
+            )

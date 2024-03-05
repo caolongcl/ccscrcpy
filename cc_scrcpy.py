@@ -169,6 +169,9 @@ class CCScrcpy(QMainWindow):
                 device.client.control.touch(
                     evt.position().x() / ratio, evt.position().y() / ratio, action
                 )
+                if action==scrcpy.ACTION_DOWN:
+                    # print(f'mouse index {device.index}')
+                    self.ui.right_view.update_focused_status(device.index)
 
             return handler
 
