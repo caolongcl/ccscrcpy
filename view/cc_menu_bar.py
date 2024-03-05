@@ -8,7 +8,7 @@ from typing import Any, Callable
 
 class _DeviceColMenu(QMenu):
     def __init__(self, parent, on_col_changed: Callable[..., Any]) -> None:
-        super().__init__(f"手机列数", parent)
+        super().__init__(f"手机列数 5", parent)
 
         device_cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         for i in range(len(device_cols)):
@@ -18,8 +18,11 @@ class _DeviceColMenu(QMenu):
             action.triggered.connect(self.__on_col_changed(action, on_col_changed))
 
     def __on_col_changed(self, action, on_col_changed: Callable[..., Any]):
+        menu = self
+
         def _on_col_changed(self):
             on_col_changed(action.data())
+            menu.setTitle(f"手机列数 {action.data()}")
 
         return _on_col_changed
 
@@ -32,7 +35,7 @@ class _DeviceScaleRatioMenu(QMenu):
         for i in range(len(scale_ratios)):
             action = QAction(f"{scale_ratios[i]}", parent)
             action.setData(scale_ratios[i])
-            print(f"ratio___{action.data()}")
+            # print(f"ratio___{action.data()}")
             self.addAction(action)
             action.triggered.connect(
                 self.__on_scale_ratio_changed(action, on_scale_ratio_changed)
@@ -40,14 +43,17 @@ class _DeviceScaleRatioMenu(QMenu):
 
     def __on_scale_ratio_changed(
         self, action, on_scale_ratio_changed: Callable[..., Any]
-    ):  
+    ):
         menu = self
+
         def _on_scale_ratio_changed(self):
             on_scale_ratio_changed(action.data())
-            menu.setTitle(f'手机屏幕缩放{action.data()}')
+            menu.setTitle(f"手机屏幕缩放 {action.data()}")
+
         return _on_scale_ratio_changed
 
 
+###################################
 class MenuBar(QMenuBar):
     def __init__(self, parent) -> None:
         super().__init__(parent)
@@ -66,3 +72,10 @@ class MenuBar(QMenuBar):
             self.menu_settings, on_scale_ratio_changed
         )
         self.menu_settings.addMenu(self.device_scale_ratio)
+
+    def add_request_screen_resize_menu(
+        self, on_request_screen_resize_changed: Callable[..., Any]
+    ):
+        settings_resize = QAction("窗口紧凑", self)
+        self.menu_settings.addAction(settings_resize)
+        settings_resize.triggered.connect(on_request_screen_resize_changed)

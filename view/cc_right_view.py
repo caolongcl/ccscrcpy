@@ -114,6 +114,7 @@ class _DeviceScreenGridView(QGroupBox):
     # 更新视频列表
     def update_device_screen(self, device_col, devices: list[Device]):
         ViewClear().clear(self.device_screen_grid)
+        self.device_screen_list = []
 
         max_col = device_col
         row = 0

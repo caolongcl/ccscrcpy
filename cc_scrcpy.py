@@ -115,6 +115,7 @@ class CCScrcpy(QMainWindow):
         # 初始化菜单
         self.ui.menu_bar.add_device_col_menu(self.__device_screen_col)
         self.ui.menu_bar.add_device_scale_ratio_menu(self.__device_screen_scale_ratio)
+        self.ui.menu_bar.add_request_screen_resize_menu(self.__request_screen_resize)
 
         # 初始化 view
         self.ui.left_view.attach(self.device_manager)
@@ -127,6 +128,7 @@ class CCScrcpy(QMainWindow):
         self.ui.left_view.update_device_no_list()
 
         self.ui.right_view.update_devices_by_col(self.device_max_col)
+        self.resize(1, 1)
 
         self.device_manager.start()
 
@@ -175,13 +177,15 @@ class CCScrcpy(QMainWindow):
             return handler
 
         return handler1
+    
+    def __request_screen_resize(self):
+        self.resize(1,1)
 
     def __device_screen_scale_ratio(self, ratio):
         self.device_max_size = self.default_device_max_size * ratio
         self.device_manager.refresh_device_screen_on()
     
     def __device_screen_col(self, col):
-        print(f'col {col}')
         devices_num = self.device_manager.get_device_num()
         last_max_col = self.device_max_col
         self.device_max_col = col
