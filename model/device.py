@@ -102,6 +102,22 @@ class DeviceManager:
         #
         self.reload()
 
+        self.__start_monitor()
+    
+    def __start_monitor(self):
+        self.thread = Thread(target=self.__run, name=f"device_monitor_thread", daemon=True)
+        self.thread.start()
+
+    def __run(self):
+        print(f"start thread:{self.thread.name}")
+        # 监控设备连接 track-devices
+        try:
+            for event in adb.track_devices():
+               print(event.present, event.serial, event.status)
+        except:
+            pass
+        print(f"end thread:{self.thread.name}")
+
     def reload(self):
         # 检查设备
         self.devices, self.frames = self.__load_device()
