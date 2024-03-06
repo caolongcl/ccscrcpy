@@ -103,7 +103,7 @@ class DeviceManager:
         self.reload()
 
         self.__start_monitor()
-    
+
     def __start_monitor(self):
         self.thread = Thread(target=self.__run, name=f"device_monitor_thread", daemon=True)
         self.thread.start()

@@ -5,6 +5,7 @@ from PySide6.QtCore import *
 # cc
 import scrcpy
 from view.cc_ui import *
+from view.cc_com import resource_path
 from model.device import *
 
 
@@ -265,7 +266,7 @@ def main():
     else:
         app = QApplication.instance()
 
-    icon = QIcon("res/icon.ico")
+    icon = QIcon(resource_path("res/icon.ico"))
     app.setWindowIcon(icon)
     cc = CCScrcpy(app)
     cc.show()
