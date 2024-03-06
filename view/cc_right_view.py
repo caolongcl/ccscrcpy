@@ -1,7 +1,7 @@
 from PySide6.QtCore import *  # type: ignore
 from PySide6.QtGui import *  # type: ignore
 from PySide6.QtWidgets import *
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from view.cc_com import Com
 

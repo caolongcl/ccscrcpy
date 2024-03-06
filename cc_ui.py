@@ -3,9 +3,7 @@
 from PySide6.QtCore import *  # type: ignore
 from PySide6.QtGui import *  # type: ignore
 from PySide6.QtWidgets import *
-from typing import Any, Callable
 
-from model.device import Device  # type: ignore
 from view.cc_left_view import LeftView
 from view.cc_menu_bar import MenuBar
 from view.cc_right_view import RightView

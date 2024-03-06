@@ -1,16 +1,11 @@
-import threading
 import time
-from typing import Tuple
 
 import scrcpy
-from adbutils import adb
-from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtCore import *
 
 # cc
 from cc_ui import *
-from view.cc_frame import CustomDeviceEvent
 from model.device import *
 
 
@@ -169,7 +164,7 @@ class CCScrcpy(QMainWindow):
                 device.client.control.touch(
                     evt.position().x() / ratio, evt.position().y() / ratio, action
                 )
-                if action==scrcpy.ACTION_DOWN:
+                if action == scrcpy.ACTION_DOWN:
                     # print(f'mouse index {device.index}')
                     self.ui.right_view.update_focused_status(device.index)
 
@@ -188,10 +183,8 @@ class CCScrcpy(QMainWindow):
                 ):
                     # print(f"device copy to clipboard")
                     device.client.control.keycode(scrcpy.KEYCODE_COPY, action)
-                    time.sleep(0.3) #
-                    text_from_dclipboard = (
-                        device.client.control.get_clipboard()
-                    )
+                    time.sleep(0.3)  #
+                    text_from_dclipboard = device.client.control.get_clipboard()
                     # print(f"copy:{text_from_dclipboard}")
                     self.__set_clipboard_text(text_from_dclipboard)
                 elif (
@@ -210,10 +203,8 @@ class CCScrcpy(QMainWindow):
                 ):
                     # print(f"device cut to clipboard")
                     device.client.control.keycode(scrcpy.KEYCODE_CUT, action)
-                    time.sleep(0.3) #
-                    text_from_dclipboard = (
-                        device.client.control.get_clipboard()
-                    )
+                    time.sleep(0.3)  #
+                    text_from_dclipboard = device.client.control.get_clipboard()
                     # print(f"copy:{text_from_dclipboard}")
                     self.__set_clipboard_text(text_from_dclipboard)
                 else:
@@ -274,7 +265,7 @@ def main():
         app = QApplication([])
     else:
         app = QApplication.instance()
-    
+
     icon = QIcon("icon.ico")
     app.setWindowIcon(icon)
     cc = CCScrcpy(app)
