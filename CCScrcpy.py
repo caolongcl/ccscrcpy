@@ -1,11 +1,10 @@
 import time
-
-import scrcpy
 from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtCore import *
 
 # cc
-from cc_ui import *
+import scrcpy
+from view.cc_ui import *
 from model.device import *
 
 
@@ -266,7 +265,7 @@ def main():
     else:
         app = QApplication.instance()
 
-    icon = QIcon("icon.ico")
+    icon = QIcon("res/icon.ico")
     app.setWindowIcon(icon)
     cc = CCScrcpy(app)
     cc.show()
