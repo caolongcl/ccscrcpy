@@ -6,15 +6,16 @@ class Frame(QObject):
     # int : 设备索引
     frame_signal = Signal(int, object)
 
-    def __init__(self, index) -> None:
+    def __init__(self, serial: str) -> None:
         super(Frame, self).__init__()
-        self.device_index = index
+        self.serial = serial
 
     def set_connect(self, slot):
         self.frame_signal.connect(slot)
 
     def post(self, frame):
-        self.frame_signal.emit(self.device_index, frame)
+        self.frame_signal.emit(self.serial, frame)
+
 
 class CustomDeviceEvent(QObject):
     custom_signal = Signal(int)

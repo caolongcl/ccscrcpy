@@ -216,13 +216,9 @@ class CCScrcpy(QMainWindow):
             return handler
 
         return handler1
-
-    def __custom_copy(self, device_index):
-        time.sleep(1)
-        device = self.device_manager.get_devices()[device_index]
-        text_from_dclipboard = device.client.control.get_clipboard()
-        print(f"copy:{text_from_dclipboard}")
-        self.__set_clipboard_text(text_from_dclipboard)
+    
+    def __on_devices_changed(self, serial:str, available:bool):
+        pass
 
     def __get_clipboard_text(self):
         clipboard = QApplication.clipboard()
