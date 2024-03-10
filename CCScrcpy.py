@@ -1,4 +1,5 @@
 import time
+
 from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtCore import *
 
@@ -104,7 +105,7 @@ class CCScrcpy(QMainWindow):
 
         # 设备管理
         self.device_manager = DeviceManager(
-            self.__on_init, self.__on_frame, self.__on_post
+            self.__on_init, self.__on_frame, self.__on_post, None
         )
 
         # 初始化菜单
@@ -119,8 +120,8 @@ class CCScrcpy(QMainWindow):
         )
 
         # 初始化设备列表
-        self.ui.left_view.update_device_num()
-        self.ui.left_view.update_device_no_list()
+        self.ui.left_view.update_devices_num()
+        self.ui.left_view.update_devices_no()
 
         self.ui.right_view.update_devices_by_col(self.device_max_col)
         self.resize(1, 1)
@@ -129,27 +130,23 @@ class CCScrcpy(QMainWindow):
         # self.device_copy_event = CustomDeviceEvent()
         # self.device_copy_event.set_connect(self.__custom_copy)
 
-        self.device_manager.start()
+        self.__start()
 
-    def __on_init(self, device_index):
-        print(f"on_init {device_index}")
-        self.ui.left_view.update_device_name(device_index)
-        self.ui.right_view.update_device_name(device_index)
+    def __on_init(self, device: Device):
+        print(
+            f"on_init {device.serial}:{device.client.device_name}:{device.client.resolution}"
+        )
+        # self.ui.right_view.update_device_name(device_index)
 
-    def __on_frame(self, device_index, frame):
+    def __on_frame(self, device: Device, frame):
         # print(f'__on_frame {device_index}')
         self.app.processEvents()
         if self.stop_render_screen:
             return
-        self.device_manager.post_frame(device_index, frame)
+        device.post_frame(frame)
 
-    def __on_post(self, device_index, frame):
-        # print(f'__on_post {device_index}')
-        self.ui.right_view.render_device_screen(
-            device_index,
-            self.device_manager.get_device_ratio(self.device_max_size, device_index),
-            frame,
-        )
+    def __on_post(self, device, frame):
+        self.ui.right_view.render_device_screen(device, frame)
 
     def __on_mouse_event(self, action=scrcpy.ACTION_DOWN):
         def handler1(device: Device):
@@ -158,15 +155,10 @@ class CCScrcpy(QMainWindow):
                 # if focused_widget is not None:
                 #     focused_widget.clearFocus()
 
-                ratio = self.device_manager.get_device_ratio(
-                    self.device_max_size, device.index
-                )
-                device.client.control.touch(
-                    evt.position().x() / ratio, evt.position().y() / ratio, action
-                )
+                device.touch(evt.position().x(), evt.position().y(), action)
                 if action == scrcpy.ACTION_DOWN:
                     # print(f'mouse index {device.index}')
-                    self.ui.right_view.update_focused_status(device.index)
+                    self.ui.right_view.update_focused_status(device)
 
             return handler
 
@@ -182,9 +174,9 @@ class CCScrcpy(QMainWindow):
                     and evt.key() == Qt.Key.Key_C
                 ):
                     # print(f"device copy to clipboard")
-                    device.client.control.keycode(scrcpy.KEYCODE_COPY, action)
+                    device.keycode(scrcpy.KEYCODE_COPY, action)
                     time.sleep(0.3)  #
-                    text_from_dclipboard = device.client.control.get_clipboard()
+                    text_from_dclipboard = device.get_clipboard()
                     # print(f"copy:{text_from_dclipboard}")
                     self.__set_clipboard_text(text_from_dclipboard)
                 elif (
@@ -194,7 +186,7 @@ class CCScrcpy(QMainWindow):
                 ):
                     text_from_qclipboard = self.__get_clipboard_text()
                     # print(f"text_from_qclipboard: {text_from_qclipboard}")
-                    device.client.control.set_clipboard(text_from_qclipboard, True)
+                    device.set_clipboard(text_from_qclipboard)
                     # device.client.control.keycode(scrcpy.KEYCODE_PASTE, action)
                 elif (
                     evt.modifiers() == Qt.KeyboardModifier.ControlModifier
@@ -202,22 +194,22 @@ class CCScrcpy(QMainWindow):
                     and action == scrcpy.ACTION_DOWN
                 ):
                     # print(f"device cut to clipboard")
-                    device.client.control.keycode(scrcpy.KEYCODE_CUT, action)
+                    device.keycode(scrcpy.KEYCODE_CUT, action)
                     time.sleep(0.3)  #
-                    text_from_dclipboard = device.client.control.get_clipboard()
+                    text_from_dclipboard = device.get_clipboard()
                     # print(f"copy:{text_from_dclipboard}")
                     self.__set_clipboard_text(text_from_dclipboard)
                 else:
                     code = map_code(evt.key())
                     # print(f'key {evt.text()}')
                     if code != -1:
-                        device.client.control.keycode(code, action)
+                        device.keycode(code, action)
 
             return handler
 
         return handler1
-    
-    def __on_devices_changed(self, serial:str, available:bool):
+
+    def __on_devices_changed(self, serial: str, available: bool):
         pass
 
     def __get_clipboard_text(self):
@@ -232,22 +224,24 @@ class CCScrcpy(QMainWindow):
         self.resize(1, 1)
 
     def __device_screen_scale_ratio(self, ratio):
+        last_device_max_size = self.device_max_size
         self.device_max_size = self.default_device_max_size * ratio
+        if last_device_max_size == self.device_max_size:
+            return
+
+        self.device_manager.update_ratio(self.device_max_size)
         self.device_manager.refresh_device_screen_on()
 
     def __device_screen_col(self, col):
-        devices_num = self.device_manager.get_device_num()
-        last_max_col = self.device_max_col
-        self.device_max_col = col
-        if self.device_max_col >= devices_num and last_max_col >= devices_num:
+        if col == self.device_max_col:
             return
-        # 更新
+        self.device_max_col = col
         self.stop_render_screen = True
         self.ui.right_view.update_devices_by_col(self.device_max_col)
         self.stop_render_screen = False
         self.device_manager.refresh_device_screen_on()
 
-    def start(self):
+    def __start(self):
         # 开始投屏
         self.device_manager.start()
 
