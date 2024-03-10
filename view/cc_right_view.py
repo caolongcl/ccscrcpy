@@ -88,7 +88,7 @@ class _DeviceScreen(QGroupBox):
 
     def update_title(self):
         self.setTitle(
-            f"【{self.index+1:02d}】设备型号:{self.device.client.device_name}"
+            f"【{self.device.index+1:02d}】设备型号:{self.device.client.device_name}"
         )
 
     def update_focused_status(self, focused):
@@ -262,6 +262,9 @@ class RightView(QGroupBox):
 
     def render_device_screen(self, device, frame):
         self.device_screen_grid_view.render_device_screen(device, frame)
+    
+    def update_title(self, device):
+         self.device_screen_grid_view.update_title(device)
 
     def update_focused_status(self, device):
         devices = self.device_manager.get_devices()

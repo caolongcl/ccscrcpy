@@ -140,7 +140,7 @@ class CCScrcpy(QMainWindow):
             f"on_init {device.serial}:{device.client.device_name}:{device.client.resolution}"
         )
         self.device_manager.update_ratio(device, self.device_max_size)
-        # self.ui.right_view.update_device_name(device_index)
+        self.ui.right_view.update_title(device)
 
     def __on_frame(self, device: Device, frame):
         # print(f'__on_frame {device_index}')
@@ -197,11 +197,11 @@ class CCScrcpy(QMainWindow):
                     and evt.key() == Qt.Key.Key_X
                     and action == scrcpy.ACTION_DOWN
                 ):
-                    # print(f"device cut to clipboard")
+                    print(f"device cut to clipboard")
                     device.keycode(scrcpy.KEYCODE_CUT, action)
                     time.sleep(0.3)  #
                     text_from_dclipboard = device.get_clipboard()
-                    # print(f"copy:{text_from_dclipboard}")
+                    print(f"copy:{text_from_dclipboard}")
                     self.__set_clipboard_text(text_from_dclipboard)
                 else:
                     code = map_code(evt.key())
@@ -233,7 +233,7 @@ class CCScrcpy(QMainWindow):
         if last_device_max_size == self.device_max_size:
             return
 
-        self.device_manager.update_ratio(self.device_max_size)
+        self.device_manager.update_ratios(self.device_max_size)
         self.device_manager.refresh_device_screen_on()
 
     def __device_screen_col(self, col):

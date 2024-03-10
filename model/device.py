@@ -203,8 +203,9 @@ class DeviceManager:
 
     # 根据序列号创建逻辑设备
     def __create_screen_device(self, serial):
+        self.index += 1
         return Device(
-            index=++self.index,
+            index=self.index,
             serial=serial,
             name="",
             on_init=self.on_init,
@@ -227,6 +228,10 @@ class DeviceManager:
     def update_ratio(self, device: Device, device_max_size):
         device.update_ratio(device_max_size)
 
+    def update_ratios(self, device_max_size):
+        for d in self.devices:
+            d.update_ratio(device_max_size)
+
     def refresh_device_screen_on(self):
         for d in self.devices:
-            d.device.on_click_screen()
+            d.on_click_screen()
