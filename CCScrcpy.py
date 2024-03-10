@@ -103,10 +103,7 @@ class CCScrcpy(QMainWindow):
 
         self.stop_render_screen = False
 
-        # 设备管理
-        self.device_manager = DeviceManager(
-            self.__on_init, self.__on_frame, self.__on_post, None
-        )
+        self.cur_devices = []
 
         # 初始化菜单
         self.ui.menu_bar.add_device_col_menu(self.__device_screen_col)
@@ -114,26 +111,18 @@ class CCScrcpy(QMainWindow):
         self.ui.menu_bar.add_request_screen_resize_menu(self.__request_screen_resize)
 
         # 初始化 view
-        self.ui.left_view.attach(self.device_manager)
         self.ui.right_view.attach(
-            self.device_manager,
             self.device_max_col,
             self.__on_mouse_event,
             self.__on_key_event,
         )
 
-        # 初始化设备列表
-        self.ui.left_view.update_devices_num()
-        self.ui.left_view.update_devices_no()
-
-        self.ui.right_view.update_devices()
         self.resize(1, 1)
 
-        # 自定义事件
-        # self.device_copy_event = CustomDeviceEvent()
-        # self.device_copy_event.set_connect(self.__custom_copy)
-
-        self.__start()
+        # 设备管理
+        self.device_manager = DeviceManager(
+            self.__on_init, self.__on_frame, self.__on_post, self.__on_devices_changed
+        )
 
     def __on_init(self, device: Device):
         print(
@@ -143,13 +132,14 @@ class CCScrcpy(QMainWindow):
         self.ui.right_view.update_title(device)
 
     def __on_frame(self, device: Device, frame):
-        # print(f'__on_frame {device_index}')
+        # print(f"__on_frame {device.serial}")
         self.app.processEvents()
         if self.stop_render_screen:
             return
         device.post_frame(frame)
 
     def __on_post(self, device, frame):
+        # print(f"__on_post {device.serial}")
         self.ui.right_view.render_device_screen(device, frame)
 
     def __on_mouse_event(self, action=scrcpy.ACTION_DOWN):
@@ -162,7 +152,7 @@ class CCScrcpy(QMainWindow):
                 device.touch(evt.position().x(), evt.position().y(), action)
                 if action == scrcpy.ACTION_DOWN:
                     # print(f'mouse index {device.index}')
-                    self.ui.right_view.update_focused_status(device)
+                    self.ui.right_view.update_focused_status(device, self.cur_devices)
 
             return handler
 
@@ -213,8 +203,20 @@ class CCScrcpy(QMainWindow):
 
         return handler1
 
-    def __on_devices_changed(self, serial: str, available: bool):
-        pass
+    def __on_devices_changed(self, devices: list[Device]):
+        self.cur_devices = devices
+        self.stop_render_screen = True
+        # left
+        # 初始化设备列表
+        self.ui.left_view.update_devices_num(devices)
+        self.ui.left_view.update_devices_no(devices)
+
+        # right
+        self.ui.right_view.update_devices(devices)
+
+        # 更新绘制状态
+        self.device_manager.update_renders(devices)
+        self.stop_render_screen = False
 
     def __get_clipboard_text(self):
         clipboard = QApplication.clipboard()
@@ -244,10 +246,6 @@ class CCScrcpy(QMainWindow):
         self.ui.right_view.update_devices_by_col(self.device_max_col)
         self.stop_render_screen = False
         self.device_manager.refresh_device_screen_on()
-
-    def __start(self):
-        # 开始投屏
-        self.device_manager.start()
 
     def closeEvent(self, _):
         print(f"app close")

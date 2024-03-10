@@ -79,10 +79,9 @@ class _DeviceNoView(QGroupBox):
     # devices 是启动以来所有的设备
     def __compare_and_create(self, devices: list[Device]):
         sorted_devices_no = []
-        for i in range(len(devices)):
-            d = devices[i]
-            if d.device.serial in self.devices_no:
-                device_no = self.devices_no[d.device.serial]
+        for d in devices:
+            if d.serial in self.devices_no:
+                device_no = self.devices_no[d.serial]
                 if d.online:
                     sorted_devices_no.append(device_no)
                 else:
@@ -90,20 +89,15 @@ class _DeviceNoView(QGroupBox):
             else:
                 if d.online:
                     new_device_no = self.__create_device_no(d)
-                    self.devices_no[d.device.serial] = new_device_no
+                    self.devices_no[d.serial] = new_device_no
                     sorted_devices_no.append(new_device_no)
         return sorted_devices_no
-
-    def __update_device_no(self, d: Device):
-        self.devices_no[d.device.serial].setText(f"【{d.index+1:02d}】")
-        self.devices_no[d.device.serial].setToolTip(f"序列号:{d.device.serial}")
 
 
 ##############################
 class LeftView(QGroupBox):
     def __init__(self):
         super().__init__()
-        self.device_manager = None
 
         self.setFixedWidth(140)
 
@@ -120,11 +114,9 @@ class LeftView(QGroupBox):
         # 设备控制
         main_layout.addStretch(-1)  # 空白占用空间，不拉伸
 
-    def attach(self, device_manager: DeviceManager):
-        self.device_manager = device_manager
+    def update_devices_num(self, devices: list[Device]):
+        num = len(list(filter(lambda d: d.online == True, devices)))
+        self.device_stats_view.update_device_num(num)
 
-    def update_devices_num(self):
-        self.device_stats_view.update_device_num(self.device_manager.get_device_num())
-
-    def update_devices_no(self):
-        self.device_no_view.update_devices(self.device_manager.get_devices())
+    def update_devices_no(self, devices: list[Device]):
+        self.device_no_view.update_devices(devices)

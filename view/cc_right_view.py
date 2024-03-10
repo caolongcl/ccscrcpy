@@ -227,7 +227,6 @@ class RightView(QGroupBox):
 
         self.on_mouse_event = None
         self.on_key_event = None
-        self.device_manager = None
 
         # 显示设备投屏
         main_layout = QVBoxLayout()
@@ -243,12 +242,10 @@ class RightView(QGroupBox):
 
     def attach(
         self,
-        device_manager: DeviceManager,
         col,
         on_mouse_event: Callable[..., Any],
         on_key_event: Callable[..., Any],
     ):
-        self.device_manager = device_manager
         self.on_mouse_event = on_mouse_event
         self.on_key_event = on_key_event
 
@@ -257,8 +254,8 @@ class RightView(QGroupBox):
     def update_devices_by_col(self, col):
         self.device_screen_grid_view.update_devices_by_col(col)
 
-    def update_devices(self):
-        self.device_screen_grid_view.update_devices(self.device_manager.get_devices())
+    def update_devices(self, devices: list[Device]):
+        self.device_screen_grid_view.update_devices(devices)
 
     def render_device_screen(self, device, frame):
         self.device_screen_grid_view.render_device_screen(device, frame)
@@ -266,8 +263,7 @@ class RightView(QGroupBox):
     def update_title(self, device):
          self.device_screen_grid_view.update_title(device)
 
-    def update_focused_status(self, device):
-        devices = self.device_manager.get_devices()
+    def update_focused_status(self, device, devices: list[Device]):
         for i in range(len(devices)):
             # print(f'ddsf device_index == i {device_index}=={i}')
             self.device_screen_grid_view.update_focused_status(
