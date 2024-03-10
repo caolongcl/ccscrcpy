@@ -158,9 +158,8 @@ class _DeviceScreenGridView(QGroupBox):
             row + 1,
         )
 
-    def __create_device_screen(self, index, device: Device):
+    def __create_device_screen(self, device: Device):
         return _DeviceScreen(
-            index,
             device,
             self.on_mouse_event(Com.ACTION_DOWN),
             self.on_mouse_event(Com.ACTION_MOVE),
@@ -182,14 +181,15 @@ class _DeviceScreenGridView(QGroupBox):
                     del screen
             else:
                 if d.online:
-                    screen = self.__create_device_screen(i, d)
+                    screen = self.__create_device_screen(d)
                     self.devices_screen[d.device.serial] = screen
                     sorted_devices_screen.append(screen)
         return sorted_devices_screen
 
     def attach(
-        self, on_mouse_event: Callable[..., Any], on_key_event: Callable[..., Any]
-    ):
+        self, col, on_mouse_event: Callable[..., Any], on_key_event: Callable[..., Any]
+    ):  
+        self.col = col
         self.on_mouse_event = on_mouse_event
         self.on_key_event = on_key_event
 
@@ -198,7 +198,9 @@ class _DeviceScreenGridView(QGroupBox):
         last_col = self.col
         self.col = col
         if (self.col >= num and last_col >= num) or self.col == last_col:
+            print(f"return update_devices_by_col")
             return
+        print(f"update_devices_by_col")
 
         ViewClear().clear(self.device_screen_grid)
         self.__update_devices_screen(self.devices_screen)
@@ -242,6 +244,7 @@ class RightView(QGroupBox):
     def attach(
         self,
         device_manager: DeviceManager,
+        col,
         on_mouse_event: Callable[..., Any],
         on_key_event: Callable[..., Any],
     ):
@@ -249,7 +252,7 @@ class RightView(QGroupBox):
         self.on_mouse_event = on_mouse_event
         self.on_key_event = on_key_event
 
-        self.device_screen_grid_view.attach(self.on_mouse_event, self.on_key_event)
+        self.device_screen_grid_view.attach(col, self.on_mouse_event, self.on_key_event)
 
     def update_devices_by_col(self, col):
         self.device_screen_grid_view.update_devices_by_col(col)

@@ -6,7 +6,7 @@ class Frame(QObject):
     frame_signal = Signal(object)
 
     def __init__(self) -> None:
-        super(Frame).__init__()
+        super(Frame, self).__init__()
 
     def set_connect(self, slot):
         self.frame_signal.connect(slot)

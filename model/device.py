@@ -28,7 +28,7 @@ class Device:
         else:
             self.name = serial
 
-        self.frame = Frame(serial=serial)
+        self.frame = Frame()
         self.frame.set_connect(lambda frame: on_post(self, frame))
 
         self.on_init_listener = on_init
@@ -72,11 +72,11 @@ class Device:
 
     def update_ratio(self, device_max_size):
         if self.online:
-            if self.device.client.resolution[0] < self.device.client.resolution[1]:
+            if self.client.resolution[0] < self.client.resolution[1]:
                 # 竖屏
-                self.ratio = device_max_size / self.device.client.resolution[0]
+                self.ratio = device_max_size / self.client.resolution[0]
             else:
-                self.ratio = device_max_size / self.device.client.resolution[1]
+                self.ratio = device_max_size / self.client.resolution[1]
         else:
             self.ratio = 1
 
@@ -206,6 +206,7 @@ class DeviceManager:
         return Device(
             index=++self.index,
             serial=serial,
+            name="",
             on_init=self.on_init,
             on_frame=self.on_frame,
             on_post=self.on_post,
@@ -214,7 +215,7 @@ class DeviceManager:
     # 加载当前在线设备
     def __load_devices(self):
         devices = [self.__create_screen_device(d.serial) for d in adb.device_list()]
-        devices.sort(lambda d: d.index)
+        devices.sort(key=lambda d: d.index)
         return devices
 
     def get_device_num(self):
@@ -223,9 +224,8 @@ class DeviceManager:
     def get_devices(self):
         return self.devices
 
-    def update_ratio(self, device_max_size):
-        for d in self.devices:
-            d.update_ratio(device_max_size)
+    def update_ratio(self, device: Device, device_max_size):
+        device.update_ratio(device_max_size)
 
     def refresh_device_screen_on(self):
         for d in self.devices:

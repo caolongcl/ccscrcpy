@@ -116,14 +116,17 @@ class CCScrcpy(QMainWindow):
         # 初始化 view
         self.ui.left_view.attach(self.device_manager)
         self.ui.right_view.attach(
-            self.device_manager, self.__on_mouse_event, self.__on_key_event
+            self.device_manager,
+            self.device_max_col,
+            self.__on_mouse_event,
+            self.__on_key_event,
         )
 
         # 初始化设备列表
         self.ui.left_view.update_devices_num()
         self.ui.left_view.update_devices_no()
 
-        self.ui.right_view.update_devices_by_col(self.device_max_col)
+        self.ui.right_view.update_devices()
         self.resize(1, 1)
 
         # 自定义事件
@@ -136,6 +139,7 @@ class CCScrcpy(QMainWindow):
         print(
             f"on_init {device.serial}:{device.client.device_name}:{device.client.resolution}"
         )
+        self.device_manager.update_ratio(device, self.device_max_size)
         # self.ui.right_view.update_device_name(device_index)
 
     def __on_frame(self, device: Device, frame):
