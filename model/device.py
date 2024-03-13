@@ -156,11 +156,24 @@ class DeviceManager:
         self.device_bind_event = CustomEvent()
         self.device_bind_event.set_connect(self.__on_device_bind)
 
+        self.log_event = CustomEvent()
+        self.log_event.set_connect(self.__print_log)
+
         # serial:Device
         self.devices_map = {}
         self.devices = []
 
+        # debug
+        self.print_log = None
+
         self.__start_monitor()
+    
+    def set_print_log(self, print_Log):
+        self.print_log = print_Log
+    
+    def __print_log(self, msg):
+        if self.print_log is not None:
+            self.print_log(msg)
 
     def __on_devices_changed(self, devices: list[Device]):
         self.on_devices_changed(devices)
@@ -183,6 +196,8 @@ class DeviceManager:
                 print(
                     f"device:{event.serial} present:{event.present} status:{event.status}"
                 )
+
+                self.log_event.post(f"device:{event.serial} present:{event.present} status:{event.status}")
 
                 if (event.present and event.status == "device") or (
                     not event.present and event.status == "absent"

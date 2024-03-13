@@ -238,7 +238,18 @@ class RightView(QGroupBox):
 
         # 设备控制
 
+        # 日志信息
+        self.log_view = QTextEdit()
+        main_layout.addWidget(self.log_view)
+
         main_layout.addStretch(-1)  # 空白占用空间，不拉伸
+
+    def set_log(self, msg):
+        last_text = self.log_view.toPlainText()
+        if len(last_text) != 0:
+            self.log_view.setPlainText(last_text + '\n' + msg)
+        else:
+            self.log_view.setPlainText(msg)
 
     def attach(
         self,

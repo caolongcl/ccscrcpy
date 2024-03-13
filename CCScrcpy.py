@@ -124,6 +124,8 @@ class CCScrcpy(QMainWindow):
             self.__on_init, self.__on_frame, self.__on_post, self.__on_devices_changed
         )
 
+        self.device_manager.set_print_log(lambda msg: self.ui.right_view.set_log(msg))
+
     def __on_init(self, device: Device):
         print(
             f"on_init {device.serial}:{device.client.device_name}:{device.client.resolution}"
