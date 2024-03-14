@@ -85,3 +85,8 @@ class MenuBar(QMenuBar):
         settings_resize = QAction("窗口紧凑", self)
         self.menu_settings.addAction(settings_resize)
         settings_resize.triggered.connect(on_request_screen_resize_changed)
+
+    def add_modify_device_name_menu(self, on_device_name_modify: Callable[..., Any]):
+        settings_modify_device_name = QAction("修改设备命名", self)
+        self.menu_settings.addAction(settings_modify_device_name)
+        settings_modify_device_name.triggered.connect(on_device_name_modify)
