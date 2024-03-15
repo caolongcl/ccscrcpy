@@ -171,6 +171,7 @@ class CCScrcpy(QMainWindow):
                     self.ui.right_view.update_focused_status(device, self.cur_devices)
                     self.ui.left_view.update_cur_device(device)
                     self.focused_device = device
+                    self.focused_device.on_click_screen()
 
             return handler
 

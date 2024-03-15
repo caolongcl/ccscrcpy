@@ -25,6 +25,8 @@ class _DeviceStatsView(QGroupBox):
     def __init__(self):
         super().__init__()
 
+        self.setFixedHeight(70)
+
         main_layout = QVBoxLayout()
         self.device_num = _NormalLabel(f"连接数:")
         main_layout.addLayout(self.device_num)
@@ -66,7 +68,10 @@ class _DeviceNoView(QGroupBox):
         layout.addLayout(self.devices_no_grid)
         layout.addItem(
             QSpacerItem(
-                0, 0, hData=QSizePolicy.Policy.Maximum, vData=QSizePolicy.Policy.Maximum
+                0,
+                0,
+                hData=QSizePolicy.Policy.Expanding,
+                vData=QSizePolicy.Policy.Expanding,
             )
         )
 
@@ -88,7 +93,7 @@ class _DeviceNoView(QGroupBox):
                 devices_no_list[i],
                 row,
                 col,
-                Qt.AlignmentFlag.AlignCenter,
+                Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft,
             )
 
     def __create_device_no(self, device: Device):
@@ -122,6 +127,40 @@ class _DeviceNoView(QGroupBox):
         return sorted_devices_no
 
 
+class _CurDeviceCtrlView(QGroupBox):
+    def __init__(self):
+        super().__init__(f"控制选中设备")
+
+        self.setFixedHeight(120)
+
+        self.device = None
+
+        layout = QVBoxLayout()
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.home_btn = QPushButton(f"桌面")
+        self.back_btn = QPushButton(f"返回")
+        self.apps_btn = QPushButton(f"最近")
+
+        layout.addWidget(self.back_btn)
+        layout.addWidget(self.home_btn)
+        layout.addWidget(self.apps_btn)
+
+        self.setLayout(layout)
+
+    def set_cur_device(self, device: Device):
+        if self.device is not None:
+            self.home_btn.clicked.disconnect(self.device.on_click_home)
+            self.back_btn.clicked.disconnect(self.device.on_click_back)
+            self.apps_btn.clicked.disconnect(self.device.on_click_recent)
+
+        self.device = device
+        if self.device is not None:
+            self.home_btn.clicked.connect(self.device.on_click_home)
+            self.back_btn.clicked.connect(self.device.on_click_back)
+            self.apps_btn.clicked.connect(self.device.on_click_recent)
+
+
 ##############################
 class LeftView(QGroupBox):
     def __init__(self):
@@ -136,11 +175,15 @@ class LeftView(QGroupBox):
         # 设备列表
         self.device_stats_view = _DeviceStatsView()
         self.device_no_view = _DeviceNoView()
+        self.device_cur_ctrl = _CurDeviceCtrlView()
         main_layout.addWidget(self.device_stats_view)
         main_layout.addWidget(self.device_no_view)
+        main_layout.addWidget(
+            self.device_cur_ctrl, alignment=Qt.AlignmentFlag.AlignBottom
+        )
 
         # 设备控制
-        main_layout.addStretch(-1)  # 空白占用空间，不拉伸
+        # main_layout.addStretch(-1)  # 空白占用空间，不拉伸
 
     def update_devices_num(self, devices: list[Device]):
         num = len(list(filter(lambda d: d.online == True, devices)))
@@ -148,6 +191,7 @@ class LeftView(QGroupBox):
 
     def update_cur_device(self, device: Device = None):
         self.device_stats_view.update_cur_device(device)
+        self.device_cur_ctrl.set_cur_device(device)
 
     def update_devices_no(self, devices: list[Device]):
         self.device_no_view.update_devices(devices)
