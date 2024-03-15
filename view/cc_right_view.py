@@ -47,32 +47,6 @@ class _DeviceScreen(QGroupBox):
         self.screen.keyPressEvent = keyPressEvent(device)
         self.screen.keyReleaseEvent = keyReleaseEvent(device)
 
-        # other control
-        ctrl_layout = QHBoxLayout()
-        ctrl_layout.setSpacing(0)
-        ctrl_layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(ctrl_layout)
-
-        # screen_btn = QPushButton(f"亮屏")
-        # screen_btn.clicked.connect(device.on_click_screen)
-        # home_btn = QPushButton(f"桌面")
-        # home_btn.clicked.connect(device.on_click_home)
-        # back_btn = QPushButton(f"返回")
-        # back_btn.clicked.connect(device.on_click_back)
-        # apps_btn = QPushButton(f"最近")
-        # apps_btn.clicked.connect(device.on_click_recent)
-
-        # ctrl_layout.addItem(
-        #     QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        # )
-        # ctrl_layout.addWidget(screen_btn)
-        # ctrl_layout.addWidget(back_btn)
-        # ctrl_layout.addWidget(home_btn)
-        # ctrl_layout.addWidget(apps_btn)
-        # ctrl_layout.addItem(
-        #     QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        # )
-
     def render_frame(self, ratio, frame):
         # print(f"render_frame ratio{ratio}")
         image = QImage(
