@@ -108,6 +108,7 @@ class CCScrcpy(QMainWindow):
         self.stop_render_screen = False
 
         self.cur_devices = []
+        self.focused_device = None
 
         # 初始化菜单
         self.ui.menu_bar.add_device_col_menu(self.__device_screen_col)
@@ -168,6 +169,8 @@ class CCScrcpy(QMainWindow):
                 if action == scrcpy.ACTION_DOWN:
                     # print(f'mouse index {device.index}')
                     self.ui.right_view.update_focused_status(device, self.cur_devices)
+                    self.ui.left_view.update_cur_device(device)
+                    self.focused_device = device
 
             return handler
 
@@ -227,6 +230,10 @@ class CCScrcpy(QMainWindow):
         self.ui.left_view.update_devices_no(devices)
 
         # right
+        if self.focused_device is not None and not self.focused_device.online:
+            self.ui.right_view.clear_focused(self.focused_device)
+            self.focused_device = None
+            self.ui.left_view.update_cur_device(self.focused_device)
         self.ui.right_view.update_devices(devices)
 
         # 更新绘制状态

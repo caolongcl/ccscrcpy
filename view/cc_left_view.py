@@ -7,20 +7,41 @@ from view.cc_clear import ViewClear
 from model.device import *
 
 
+class _NormalLabel(QHBoxLayout):
+    def __init__(self, title):
+        super().__init__()
+
+        title_label = QLabel(title)
+        self.target_label = QLabel()
+        self.addWidget(title_label)
+        self.addWidget(self.target_label)
+
+    def update_target_label(self, target):
+        self.target_label.setText(target)
+
+
 # 设备统计信息
 class _DeviceStatsView(QGroupBox):
     def __init__(self):
         super().__init__()
 
-        layout = QHBoxLayout()
-        self.setLayout(layout)
-        title = QLabel(f"连接设备:")
-        self.device_num = QLabel(f"0")
-        layout.addWidget(title)
-        layout.addWidget(self.device_num)
+        main_layout = QVBoxLayout()
+        self.device_num = _NormalLabel(f"连接数:")
+        main_layout.addLayout(self.device_num)
+
+        self.cur_device = _NormalLabel(f"选中:")
+        main_layout.addLayout(self.cur_device)
+
+        self.setLayout(main_layout)
 
     def update_device_num(self, num):
-        self.device_num.setText(f"{num}")
+        self.device_num.update_target_label(f"{num}")
+
+    def update_cur_device(self, device: Device):
+        if device is None:
+            self.cur_device.update_target_label(f"")
+            return
+        self.cur_device.update_target_label(f"【{device.index+1:02d}】")
 
 
 # 设备序号列表
@@ -124,6 +145,9 @@ class LeftView(QGroupBox):
     def update_devices_num(self, devices: list[Device]):
         num = len(list(filter(lambda d: d.online == True, devices)))
         self.device_stats_view.update_device_num(num)
+
+    def update_cur_device(self, device: Device = None):
+        self.device_stats_view.update_cur_device(device)
 
     def update_devices_no(self, devices: list[Device]):
         self.device_no_view.update_devices(devices)

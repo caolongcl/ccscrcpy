@@ -197,9 +197,7 @@ class _DeviceScreenGridView(QGroupBox):
         last_col = self.col
         self.col = col
         if (self.col >= num and last_col >= num) or self.col == last_col:
-            print(f"return update_devices_by_col")
             return
-        print(f"update_devices_by_col")
 
         ViewClear().clear(self.device_screen_grid)
         devices_screen = [ds for ds in self.devices_screen.values()]
@@ -282,3 +280,6 @@ class RightView(QGroupBox):
             self.device_screen_grid_view.update_focused_status(
                 devices[i], devices[i] == device
             )
+
+    def clear_focused(self, device):
+        self.device_screen_grid_view.update_focused_status(device, False)
