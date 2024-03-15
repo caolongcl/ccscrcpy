@@ -3,11 +3,15 @@ import time
 from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtCore import *
 
-# cc
 import scrcpy
+from view.dialog import DeviceNameModifyDialog
+
+# cc
+from view.settings import DeviceNameSettings
 from view.cc_ui import *
 from view.cc_com import resource_path
 from model.device import *
+from model.config import *
 
 
 def map_code(code):
@@ -109,6 +113,7 @@ class CCScrcpy(QMainWindow):
         self.ui.menu_bar.add_device_col_menu(self.__device_screen_col)
         self.ui.menu_bar.add_device_scale_ratio_menu(self.__device_screen_scale_ratio)
         self.ui.menu_bar.add_request_screen_resize_menu(self.__request_screen_resize)
+        self.ui.menu_bar.add_modify_device_name_menu(self.__modify_device_name)
 
         # 初始化 view
         self.ui.right_view.attach(
@@ -121,10 +126,17 @@ class CCScrcpy(QMainWindow):
 
         # 设备管理
         self.device_manager = DeviceManager(
-            self.__on_init, self.__on_frame, self.__on_post, self.__on_devices_changed
+            self.__on_init,
+            self.__on_frame,
+            self.__on_post,
+            self.__on_devices_changed,
+            self.__device_name_get,
         )
 
-        self.device_manager.set_print_log(lambda msg: self.ui.right_view.set_log(msg))
+        if ui_config_show_log:
+            self.device_manager.set_print_log(
+                lambda msg: self.ui.right_view.set_log(msg)
+            )
 
     def __on_init(self, device: Device):
         print(
@@ -132,6 +144,7 @@ class CCScrcpy(QMainWindow):
         )
         self.device_manager.update_ratio(device, self.device_max_size)
         self.ui.right_view.update_title(device)
+        self.ui.left_view.update_device_name(device)
 
     def __on_frame(self, device: Device, frame):
         # print(f"__on_frame {device.serial}")
@@ -220,6 +233,10 @@ class CCScrcpy(QMainWindow):
         self.device_manager.update_renders(devices)
         self.stop_render_screen = False
 
+    def __device_name_get(self, serial):
+        name_settings = DeviceNameSettings()
+        return name_settings.read_device_name(serial)
+
     def __get_clipboard_text(self):
         clipboard = QApplication.clipboard()
         return clipboard.text()
@@ -230,6 +247,14 @@ class CCScrcpy(QMainWindow):
 
     def __request_screen_resize(self):
         self.resize(1, 1)
+
+    def __on_device_name_update(self, device):
+        self.ui.right_view.update_title(device)
+
+    def __modify_device_name(self):
+        devices = self.device_manager.get_devices_info()
+        dialog = DeviceNameModifyDialog(devices, self.__on_device_name_update)
+        dialog.exec()
 
     def __device_screen_scale_ratio(self, ratio):
         last_device_max_size = self.device_max_size

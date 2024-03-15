@@ -72,9 +72,16 @@ class _DeviceNoView(QGroupBox):
 
     def __create_device_no(self, device: Device):
         device_label = QLabel(f"【{device.index+1:02d}】")
-        device_label.setToolTip(f"序列号:{device.serial}")
+        device_label.setToolTip(
+            f"序列号:{device.serial} 型号:{device.client.device_name}"
+        )
         device_label.setFixedSize(40, 30)
         return device_label
+
+    def update_device_name(self, d: Device):
+        self.devices_no[d.device.serial].setToolTip(
+            f"序列号:{d.device.serial} 型号:{d.client.device_name}"
+        )
 
     # devices 是启动以来所有的设备
     def __compare_and_create(self, devices: list[Device]):
@@ -120,3 +127,6 @@ class LeftView(QGroupBox):
 
     def update_devices_no(self, devices: list[Device]):
         self.device_no_view.update_devices(devices)
+
+    def update_device_name(self, device: Device):
+        self.device_no_view.update_device_name(device)

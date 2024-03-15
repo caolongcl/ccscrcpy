@@ -7,6 +7,7 @@ from view.cc_com import Com
 
 from model.device import *
 from view.cc_clear import ViewClear
+from model.config import *
 
 
 # 单个投屏
@@ -20,7 +21,7 @@ class _DeviceScreen(QGroupBox):
         keyPressEvent: Callable[..., Any],
         keyReleaseEvent: Callable[..., Any],
     ):
-        super().__init__(f"【{device.index+1:02d}】型号:{device.client.device_name}")
+        super().__init__(f"【{device.index+1:02d}】{device.name}")
         self.device = device
 
         layout = QVBoxLayout()
@@ -87,9 +88,7 @@ class _DeviceScreen(QGroupBox):
         self.screen.setPixmap(pix)
 
     def update_title(self):
-        self.setTitle(
-            f"【{self.device.index+1:02d}】设备型号:{self.device.client.device_name}"
-        )
+        self.setTitle(f"【{self.device.index+1:02d}】{self.device.name}")
 
     def update_focused_status(self, focused):
         if focused:
@@ -188,7 +187,7 @@ class _DeviceScreenGridView(QGroupBox):
 
     def attach(
         self, col, on_mouse_event: Callable[..., Any], on_key_event: Callable[..., Any]
-    ):  
+    ):
         self.col = col
         self.on_mouse_event = on_mouse_event
         self.on_key_event = on_key_event
@@ -203,7 +202,9 @@ class _DeviceScreenGridView(QGroupBox):
         print(f"update_devices_by_col")
 
         ViewClear().clear(self.device_screen_grid)
-        self.__update_devices_screen(self.devices_screen)
+        devices_screen = [ds for ds in self.devices_screen.values()]
+        devices_screen.sort(key=lambda ds: ds.device.index)
+        self.__update_devices_screen(devices_screen)
 
     # 更新设备列表
     def update_devices(self, devices: list[Device]):
@@ -239,15 +240,16 @@ class RightView(QGroupBox):
         # 设备控制
 
         # 日志信息
-        self.log_view = QTextEdit()
-        main_layout.addWidget(self.log_view)
+        if ui_config_show_log:
+            self.log_view = QTextEdit()
+            main_layout.addWidget(self.log_view)
 
         main_layout.addStretch(-1)  # 空白占用空间，不拉伸
 
     def set_log(self, msg):
         last_text = self.log_view.toPlainText()
         if len(last_text) != 0:
-            self.log_view.setPlainText(last_text + '\n' + msg)
+            self.log_view.setPlainText(last_text + "\n" + msg)
         else:
             self.log_view.setPlainText(msg)
 
@@ -270,9 +272,9 @@ class RightView(QGroupBox):
 
     def render_device_screen(self, device, frame):
         self.device_screen_grid_view.render_device_screen(device, frame)
-    
+
     def update_title(self, device):
-         self.device_screen_grid_view.update_title(device)
+        self.device_screen_grid_view.update_title(device)
 
     def update_focused_status(self, device, devices: list[Device]):
         for i in range(len(devices)):

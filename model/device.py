@@ -5,6 +5,7 @@ import scrcpy
 from adbutils import adb
 
 from view.cc_frame import CustomEvent, Frame
+from model.config import *
 
 
 class Device:
@@ -16,7 +17,7 @@ class Device:
         self,
         index: int,
         serial: str,
-        name: Optional[str | None],
+        name: str,
         on_init: Callable[..., Any],
         on_frame: Callable[..., Any],
         on_post: Callable[..., Any],
@@ -56,7 +57,9 @@ class Device:
         self.on_post_listener(self, frame)
 
     def __on_init(self):
-        print(f"device:{self.client.device_name}, resolution:{self.client.resolution}")
+        print(
+            f"device:{self.client.device_name}, name:{self.name},  resolution:{self.client.resolution}"
+        )
         if self.on_init_listener is not None:
             self.on_init_listener(self)
 
@@ -142,11 +145,13 @@ class DeviceManager:
         on_frame: Callable[..., Any],
         on_post: Callable[..., Any],
         on_devices_changed: Callable[..., Any],
+        on_device_name_get: Callable[..., Any],
     ) -> None:
         self.on_init = on_init
         self.on_frame = on_frame
         self.on_post = on_post
         self.on_devices_changed = on_devices_changed
+        self.on_device_name_get = on_device_name_get
 
         self.index = -1
 
@@ -156,8 +161,9 @@ class DeviceManager:
         self.device_bind_event = CustomEvent()
         self.device_bind_event.set_connect(self.__on_device_bind)
 
-        self.log_event = CustomEvent()
-        self.log_event.set_connect(self.__print_log)
+        if ui_config_show_log:
+            self.log_event = CustomEvent()
+            self.log_event.set_connect(self.__print_log)
 
         # serial:Device
         self.devices_map = {}
@@ -167,10 +173,10 @@ class DeviceManager:
         self.print_log = None
 
         self.__start_monitor()
-    
+
     def set_print_log(self, print_Log):
         self.print_log = print_Log
-    
+
     def __print_log(self, msg):
         if self.print_log is not None:
             self.print_log(msg)
@@ -197,7 +203,10 @@ class DeviceManager:
                     f"device:{event.serial} present:{event.present} status:{event.status}"
                 )
 
-                self.log_event.post(f"device:{event.serial} present:{event.present} status:{event.status}")
+                if ui_config_show_log:
+                    self.log_event.post(
+                        f"device:{event.serial} present:{event.present} status:{event.status}"
+                    )
 
                 if (event.present and event.status == "device") or (
                     not event.present and event.status == "absent"
@@ -224,7 +233,9 @@ class DeviceManager:
                 device.set_online(False)
                 changed = True
         elif online:
-            device = self.__create_screen_device(serial)
+            device = self.__create_screen_device(
+                serial, self.on_device_name_get(serial)
+            )
             self.devices_map[serial] = device
             self.device_bind_event.post(device)
             changed = True
@@ -237,12 +248,12 @@ class DeviceManager:
             self.event.post(self.devices)
 
     # 根据序列号创建逻辑设备
-    def __create_screen_device(self, serial):
+    def __create_screen_device(self, serial, name):
         self.index += 1
         return Device(
             index=self.index,
             serial=serial,
-            name="",
+            name=name,
             on_init=self.on_init,
             on_frame=self.on_frame,
             on_post=self.on_post,
@@ -269,3 +280,9 @@ class DeviceManager:
     def stop(self):
         for device in self.devices:
             device.stop_frame()
+
+    def get_devices_info(self):
+        devices = [device for device in self.devices_map.values()]
+        filtered = list(filter(lambda d: d.online, devices))
+        filtered.sort(key=lambda d: d.index)
+        return filtered
