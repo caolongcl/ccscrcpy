@@ -12,3 +12,6 @@ pip install av==9.2.0
 
 ## UI
 ![](./CCScrcpy_image.jpeg)
+
+## 引用
+idea:[py-scrcpy-client](https://github.com/leng-yue/py-scrcpy-client)
