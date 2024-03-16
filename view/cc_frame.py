@@ -3,27 +3,26 @@ from PySide6.QtCore import *
 
 
 class Frame(QObject):
-    # int : 设备索引
-    frame_signal = Signal(int, object)
+    frame_signal = Signal(object)
 
-    def __init__(self, index) -> None:
+    def __init__(self) -> None:
         super(Frame, self).__init__()
-        self.device_index = index
 
     def set_connect(self, slot):
         self.frame_signal.connect(slot)
 
     def post(self, frame):
-        self.frame_signal.emit(self.device_index, frame)
+        self.frame_signal.emit(frame)
 
-class CustomDeviceEvent(QObject):
-    custom_signal = Signal(int)
+
+class CustomEvent(QObject):
+    custom_signal = Signal(object)
 
     def __init__(self) -> None:
-        super(CustomDeviceEvent, self).__init__()
+        super(CustomEvent, self).__init__()
 
     def set_connect(self, slot):
         self.custom_signal.connect(slot)
 
-    def post(self, index):
-        self.custom_signal.emit(index)
+    def post(self, data):
+        self.custom_signal.emit(data)

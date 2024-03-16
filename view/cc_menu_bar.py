@@ -46,8 +46,9 @@ class _DeviceScaleRatioMenu(QMenu):
     ):
         menu = self
 
-        def _on_scale_ratio_changed(self):
+        def _on_scale_ratio_changed():
             on_scale_ratio_changed(action.data())
+            # print(f"action data:{action.data()}")
             menu.setTitle(f"手机屏幕缩放 {action.data()}")
 
         return _on_scale_ratio_changed
@@ -63,7 +64,7 @@ class MenuBar(QMenuBar):
 
         self.menu_about = QMenu(f"关于", self)
         self.addAction(self.menu_about.menuAction())
-        about_version = QAction("版本 v0.1.0", self)
+        about_version = QAction("版本 v0.2.0", self)
         self.menu_about.addAction(about_version)
 
     def add_device_col_menu(self, on_col_changed: Callable[..., Any]):
@@ -84,3 +85,8 @@ class MenuBar(QMenuBar):
         settings_resize = QAction("窗口紧凑", self)
         self.menu_settings.addAction(settings_resize)
         settings_resize.triggered.connect(on_request_screen_resize_changed)
+
+    def add_modify_device_name_menu(self, on_device_name_modify: Callable[..., Any]):
+        settings_modify_device_name = QAction("修改设备命名", self)
+        self.menu_settings.addAction(settings_modify_device_name)
+        settings_modify_device_name.triggered.connect(on_device_name_modify)

@@ -7,6 +7,7 @@ from view.cc_com import Com
 
 from model.device import *
 from view.cc_clear import ViewClear
+from model.config import *
 
 
 # 单个投屏
@@ -20,7 +21,7 @@ class _DeviceScreen(QGroupBox):
         keyPressEvent: Callable[..., Any],
         keyReleaseEvent: Callable[..., Any],
     ):
-        super().__init__(f"【{device.index+1:02d}】序列号:{device.client.device_name}")
+        super().__init__(f"【{device.index+1:02d}】{device.name}")
         self.device = device
 
         layout = QVBoxLayout()
@@ -46,32 +47,6 @@ class _DeviceScreen(QGroupBox):
         self.screen.keyPressEvent = keyPressEvent(device)
         self.screen.keyReleaseEvent = keyReleaseEvent(device)
 
-        # other control
-        ctrl_layout = QHBoxLayout()
-        ctrl_layout.setSpacing(0)
-        ctrl_layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(ctrl_layout)
-
-        screen_btn = QPushButton(f"亮屏")
-        screen_btn.clicked.connect(device.on_click_screen)
-        home_btn = QPushButton(f"桌面")
-        home_btn.clicked.connect(device.on_click_home)
-        back_btn = QPushButton(f"返回")
-        back_btn.clicked.connect(device.on_click_back)
-        apps_btn = QPushButton(f"最近")
-        apps_btn.clicked.connect(device.on_click_recent)
-
-        ctrl_layout.addItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        )
-        ctrl_layout.addWidget(screen_btn)
-        ctrl_layout.addWidget(back_btn)
-        ctrl_layout.addWidget(home_btn)
-        ctrl_layout.addWidget(apps_btn)
-        ctrl_layout.addItem(
-            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        )
-
     def render_frame(self, ratio, frame):
         # print(f"render_frame ratio{ratio}")
         image = QImage(
@@ -87,9 +62,7 @@ class _DeviceScreen(QGroupBox):
         self.screen.setPixmap(pix)
 
     def update_title(self):
-        self.setTitle(
-            f"【{self.device.index+1:02d}】设备型号:{self.device.client.device_name}"
-        )
+        self.setTitle(f"【{self.device.index+1:02d}】{self.device.name}")
 
     def update_focused_status(self, focused):
         if focused:
@@ -103,6 +76,7 @@ class _DeviceScreenGridView(QGroupBox):
     def __init__(self):
         super().__init__(f"设备投屏")
 
+        self.col = -1
         self.on_mouse_event = None
         self.on_key_event = None
 
@@ -117,7 +91,7 @@ class _DeviceScreenGridView(QGroupBox):
         self.device_screen_grid.setSpacing(4)
         self.device_screen_grid.setContentsMargins(2, 2, 2, 2)
 
-        self.device_screen_list = []
+        self.devices_screen = {}
 
         layout.addItem(
             QSpacerItem(
@@ -128,32 +102,17 @@ class _DeviceScreenGridView(QGroupBox):
             )
         )
 
-    # 更新视频列表
-    def update_device_screen(self, device_col, devices: list[Device]):
-        ViewClear().clear(self.device_screen_grid)
-        self.device_screen_list = []
-
-        max_col = device_col
+    def __update_devices_screen(self, devices_screen: list[_DeviceScreen]):
+        max_col = self.col
         row = 0
         col = 0
 
-        for i in range(len(devices)):
-            device = devices[i]
+        for i in range(len(devices_screen)):
             row = i // max_col
             col = i % max_col
 
-            device_screen = _DeviceScreen(
-                device,
-                self.on_mouse_event(Com.ACTION_DOWN),
-                self.on_mouse_event(Com.ACTION_MOVE),
-                self.on_mouse_event(Com.ACTION_UP),
-                self.on_key_event(Com.ACTION_DOWN),
-                self.on_key_event(Com.ACTION_UP),
-            )
-            self.device_screen_list.append(device_screen)
-
             self.device_screen_grid.addWidget(
-                device_screen,
+                devices_screen[i],
                 row,
                 col,
                 Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter,
@@ -172,20 +131,66 @@ class _DeviceScreenGridView(QGroupBox):
             row + 1,
         )
 
+    def __create_device_screen(self, device: Device):
+        return _DeviceScreen(
+            device,
+            self.on_mouse_event(Com.ACTION_DOWN),
+            self.on_mouse_event(Com.ACTION_MOVE),
+            self.on_mouse_event(Com.ACTION_UP),
+            self.on_key_event(Com.ACTION_DOWN),
+            self.on_key_event(Com.ACTION_UP),
+        )
+
+    # devices 是启动以来所有的设备
+    def __compare_and_create(self, devices: list[Device]):
+        sorted_devices_screen = []
+        for i in range(len(devices)):
+            d = devices[i]
+            if d.device.serial in self.devices_screen:
+                screen = self.devices_screen[d.device.serial]
+                if d.online:
+                    sorted_devices_screen.append(screen)
+                else:
+                    del screen
+            else:
+                if d.online:
+                    screen = self.__create_device_screen(d)
+                    self.devices_screen[d.device.serial] = screen
+                    sorted_devices_screen.append(screen)
+        return sorted_devices_screen
+
     def attach(
-        self, on_mouse_event: Callable[..., Any], on_key_event: Callable[..., Any]
+        self, col, on_mouse_event: Callable[..., Any], on_key_event: Callable[..., Any]
     ):
+        self.col = col
         self.on_mouse_event = on_mouse_event
         self.on_key_event = on_key_event
 
-    def get_screen_list(self):
-        return self.device_screen_list
+    def update_devices_by_col(self, col):
+        num = len(self.devices_screen)
+        last_col = self.col
+        self.col = col
+        if (self.col >= num and last_col >= num) or self.col == last_col:
+            return
 
-    def update_device_name(self, device_index):
-        self.device_screen_list[device_index].update_title()
+        ViewClear().clear(self.device_screen_grid)
+        devices_screen = [ds for ds in self.devices_screen.values()]
+        devices_screen.sort(key=lambda ds: ds.device.index)
+        self.__update_devices_screen(devices_screen)
 
-    def update_focused_status(self, device_index, focused):
-        self.device_screen_list[device_index].update_focused_status(focused)
+    # 更新设备列表
+    def update_devices(self, devices: list[Device]):
+        ViewClear().clear(self.device_screen_grid)
+        self.__update_devices_screen(self.__compare_and_create(devices))
+
+    def update_title(self, d: Device):
+        self.devices_screen[d.device.serial].update_title()
+
+    def render_device_screen(self, d: Device, frame):
+        self.devices_screen[d.device.serial].render_frame(d.ratio, frame)
+
+    def update_focused_status(self, d: Device, focused):
+        self.devices_screen[d.device.serial].update_focused_status(focused)
 
 
 #####################################
@@ -193,10 +198,8 @@ class RightView(QGroupBox):
     def __init__(self):
         super().__init__()
 
-        self.device_col = 0
         self.on_mouse_event = None
         self.on_key_event = None
-        self.device_manager = None
 
         # 显示设备投屏
         main_layout = QVBoxLayout()
@@ -208,42 +211,49 @@ class RightView(QGroupBox):
 
         # 设备控制
 
+        # 日志信息
+        if ui_config_show_log:
+            self.log_view = QTextEdit()
+            main_layout.addWidget(self.log_view)
+
         main_layout.addStretch(-1)  # 空白占用空间，不拉伸
+
+    def set_log(self, msg):
+        last_text = self.log_view.toPlainText()
+        if len(last_text) != 0:
+            self.log_view.setPlainText(last_text + "\n" + msg)
+        else:
+            self.log_view.setPlainText(msg)
 
     def attach(
         self,
-        device_manager: DeviceManager,
+        col,
         on_mouse_event: Callable[..., Any],
         on_key_event: Callable[..., Any],
     ):
-        self.device_manager = device_manager
         self.on_mouse_event = on_mouse_event
         self.on_key_event = on_key_event
 
-        self.device_screen_grid_view.attach(self.on_mouse_event, self.on_key_event)
+        self.device_screen_grid_view.attach(col, self.on_mouse_event, self.on_key_event)
 
-    def update_devices_by_col(self, device_col):
-        self.device_col = device_col
-        self.device_screen_grid_view.update_device_screen(
-            device_col, self.device_manager.get_devices()
-        )
+    def update_devices_by_col(self, col):
+        self.device_screen_grid_view.update_devices_by_col(col)
 
-    def update_devices(self):
-        self.device_screen_grid_view.update_device_screen(
-            self.device_col, self.device_manager.get_devices()
-        )
+    def update_devices(self, devices: list[Device]):
+        self.device_screen_grid_view.update_devices(devices)
 
-    def render_device_screen(self, index, ratio, frame):
-        screen_list = self.device_screen_grid_view.get_screen_list()
-        screen_list[index].render_frame(ratio, frame)
+    def render_device_screen(self, device, frame):
+        self.device_screen_grid_view.render_device_screen(device, frame)
 
-    def update_device_name(self, device_index):
-        self.device_screen_grid_view.update_device_name(device_index)
+    def update_title(self, device):
+        self.device_screen_grid_view.update_title(device)
 
-    def update_focused_status(self, device_index):
-        devices = self.device_manager.get_devices()
+    def update_focused_status(self, device, devices: list[Device]):
         for i in range(len(devices)):
             # print(f'ddsf device_index == i {device_index}=={i}')
             self.device_screen_grid_view.update_focused_status(
-                i, device_index == i
+                devices[i], devices[i] == device
             )
+
+    def clear_focused(self, device):
+        self.device_screen_grid_view.update_focused_status(device, False)
