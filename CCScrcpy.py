@@ -113,8 +113,8 @@ class CCScrcpy(QMainWindow):
         # 初始化菜单
         self.ui.menu_bar.add_device_col_menu(self.__device_screen_col)
         self.ui.menu_bar.add_device_scale_ratio_menu(self.__device_screen_scale_ratio)
-        self.ui.menu_bar.add_request_screen_resize_menu(self.__request_screen_resize)
-        self.ui.menu_bar.add_modify_device_name_menu(self.__modify_device_name)
+        # self.ui.menu_bar.add_request_screen_resize_menu(self.__request_screen_resize)
+        # self.ui.menu_bar.add_modify_device_name_menu(self.__modify_device_name)
 
         # 初始化 view
         self.ui.right_view.attach(
@@ -122,6 +122,7 @@ class CCScrcpy(QMainWindow):
             self.__on_mouse_event,
             self.__on_key_event,
         )
+        self.ui.left_view.set_on_global_ctrl(self.__on_global_ctrl)
 
         self.resize(1, 1)
 
@@ -253,9 +254,6 @@ class CCScrcpy(QMainWindow):
         clipboard = QApplication.clipboard()
         clipboard.setText(text)
 
-    def __request_screen_resize(self):
-        self.resize(1, 1)
-
     def __on_device_name_update(self, device):
         self.ui.right_view.update_title(device)
 
@@ -281,6 +279,12 @@ class CCScrcpy(QMainWindow):
         self.ui.right_view.update_devices_by_col(self.device_max_col)
         self.stop_render_screen = False
         self.device_manager.refresh_device_screen_on()
+    
+    def __on_global_ctrl(self, action):
+        if action == ui_global_ctrl_resize:
+            self.resize(1, 1)
+        elif action == ui_global_ctrl_rename:
+            self.__modify_device_name()
 
     def closeEvent(self, _):
         print(f"app close")

@@ -129,7 +129,7 @@ class _DeviceNoView(QGroupBox):
 
 class _CurDeviceCtrlView(QGroupBox):
     def __init__(self):
-        super().__init__(f"控制选中设备")
+        super().__init__(f"控制选中")
 
         self.setFixedHeight(120)
 
@@ -161,6 +161,27 @@ class _CurDeviceCtrlView(QGroupBox):
             self.apps_btn.clicked.connect(self.device.on_click_recent)
 
 
+class _GlobalCtrlView(QGroupBox):
+    def __init__(self):
+        super().__init__(f"全局控制")
+
+        self.setFixedHeight(100)
+        layout = QVBoxLayout()
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.resize_btn = QPushButton(f"窗口紧凑")
+        self.rename_btn = QPushButton(f"修改命名")
+
+        layout.addWidget(self.resize_btn)
+        layout.addWidget(self.rename_btn)
+        self.setLayout(layout)
+
+    def set_on_global_ctrl(self, on_global_ctrl: Callable[..., Any]):
+        if on_global_ctrl is not None:
+            self.resize_btn.clicked.connect(lambda _: on_global_ctrl(ui_global_ctrl_resize))
+            self.rename_btn.clicked.connect(lambda _: on_global_ctrl(ui_global_ctrl_rename))
+
+
 ##############################
 class LeftView(QGroupBox):
     def __init__(self):
@@ -175,11 +196,15 @@ class LeftView(QGroupBox):
         # 设备列表
         self.device_stats_view = _DeviceStatsView()
         self.device_no_view = _DeviceNoView()
-        self.device_cur_ctrl = _CurDeviceCtrlView()
+        self.device_cur_ctrl_view = _CurDeviceCtrlView()
+        self.global_ctrl_view = _GlobalCtrlView()
         main_layout.addWidget(self.device_stats_view)
         main_layout.addWidget(self.device_no_view)
         main_layout.addWidget(
-            self.device_cur_ctrl, alignment=Qt.AlignmentFlag.AlignBottom
+            self.device_cur_ctrl_view, alignment=Qt.AlignmentFlag.AlignBottom
+        )
+        main_layout.addWidget(
+            self.global_ctrl_view, alignment=Qt.AlignmentFlag.AlignBottom
         )
 
         # 设备控制
@@ -191,10 +216,13 @@ class LeftView(QGroupBox):
 
     def update_cur_device(self, device: Device = None):
         self.device_stats_view.update_cur_device(device)
-        self.device_cur_ctrl.set_cur_device(device)
+        self.device_cur_ctrl_view.set_cur_device(device)
 
     def update_devices_no(self, devices: list[Device]):
         self.device_no_view.update_devices(devices)
 
     def update_device_name(self, device: Device):
         self.device_no_view.update_device_name(device)
+
+    def set_on_global_ctrl(self, on_global_ctrl: Callable[..., Any]):
+        self.global_ctrl_view.set_on_global_ctrl(on_global_ctrl)
