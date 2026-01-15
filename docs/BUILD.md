@@ -32,7 +32,7 @@ python -m venv .venv
 
 ```bash
 # 确保在虚拟环境中
-pip install -r requirements.txt
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ### 3. 安装 PyInstaller（打包工具）

@@ -36,22 +36,64 @@ def check_and_install_pyinstaller():
 
 
 def check_upx():
-    """检查 UPX 是否可用"""
+    """检查 UPX 是否可用，返回 UPX 路径或 None"""
+    upx_path = None
+    system = platform.system()
+
+    # 检查 PATH 中的 upx
     upx_path = shutil.which("upx")
+
+    # Windows: 检查常见安装路径
+    if not upx_path and system == "Windows":
+        common_paths = [
+            r"C:\Program Files\upx.exe",
+            r"C:\Program Files (x86)\upx.exe",
+            r"C:\upx\upx.exe",
+        ]
+        for path in common_paths:
+            if os.path.exists(path):
+                upx_path = path
+                break
+
     if upx_path:
+        # Windows: 如果路径包含空格，尝试使用短路径
+        if system == "Windows" and " " in upx_path:
+            try:
+                import ctypes
+                import ctypes.wintypes
+
+                # 获取短路径名（8.3 格式）
+                GetShortPathNameW = ctypes.windll.kernel32.GetShortPathNameW
+                GetShortPathNameW.argtypes = [
+                    ctypes.wintypes.LPCWSTR,
+                    ctypes.wintypes.LPWSTR,
+                    ctypes.wintypes.DWORD
+                ]
+                GetShortPathNameW.restype = ctypes.wintypes.DWORD
+
+                short_path = ctypes.create_unicode_buffer(260)
+                result = GetShortPathNameW(upx_path, short_path, 260)
+                if result and result < 260:
+                    upx_path = short_path.value
+                    print(f"  使用短路径: {upx_path}")
+            except Exception as e:
+                print(f"  无法获取短路径: {e}")
         try:
             result = subprocess.run([upx_path, "--version"], capture_output=True, text=True)
             if result.returncode == 0:
                 version = result.stdout.split('\n')[0]
                 print(f"✓ UPX 可用: {version}")
-                return True
-        except Exception:
-            pass
+                print(f"  路径: {upx_path}")
+                return upx_path
+        except Exception as e:
+            print(f"⚠ UPX 检测失败: {e}")
+
     print("⚠ 警告: 未找到 UPX，建议安装以减小文件体积")
     print("  安装方法:")
     print("  - macOS: brew install upx")
     print("  - Windows: 下载 https://github.com/upx/upx/releases")
-    return False
+    print("  - 或添加到系统 PATH")
+    return None
 
 
 def get_platform_name():
@@ -115,6 +157,8 @@ def build_windows(mode="balanced", clean=True):
     print(f"开始打包 Windows 版本 - 模式: {mode}")
     print("="*60)
 
+    system = platform.system()
+
     # 清理之前的构建
     if clean:
         for folder in ["build", "dist/CCScrcpy.exe"]:
@@ -127,7 +171,7 @@ def build_windows(mode="balanced", clean=True):
 
     scrcpy_server = get_scrcpy_server()
     icon_path = get_icon_path()
-    has_upx = check_upx()
+    upx_path = check_upx()
 
     # 基础 PyInstaller 命令
     cmd = [
@@ -146,11 +190,26 @@ def build_windows(mode="balanced", clean=True):
         "--exclude-module=unittest",
         "--exclude-module=tkinter",
         "--exclude-module=Tkinter",
-        # 去除调试符号
-        "--strip",
+        # 去除调试符号（仅 Linux/macOS）
+        "--strip" if system != "Windows" else "",
         # 不包含 Python 解释器（减小体积）
-        "--noupx" if not has_upx else "",
+        "--noupx" if not upx_path else "",
     ]
+
+    # 如果 UPX 可用，添加 upx 路径
+    if upx_path:
+        upx_dir = os.path.dirname(upx_path) or os.path.dirname(os.path.abspath(upx_path))
+        if upx_dir and os.path.exists(upx_dir):
+            # Windows: 如果路径包含空格，尝试使用短路径或提示用户
+            if " " in upx_dir and system == "Windows":
+                print(f"⚠ 警告: UPX 路径包含空格: {upx_dir}")
+                print("  可能导致打包失败。建议:")
+                print("  1. 将 UPX 移动到一个没有空格的路径，如 C:\\upx\\")
+                print("  2. 或将 'Program Files' 的短路径添加到 PATH")
+                print("  3. 或使用 --noupx 参数禁用 UPX 压缩")
+                print()
+            cmd.append(f"--upx-dir={upx_dir}")
+            print(f"使用 UPX 目录: {upx_dir}")
 
     # 根据模式配置
     if mode == "small":
@@ -186,12 +245,33 @@ def build_windows(mode="balanced", clean=True):
         print(f"包含: {scrcpy_server}")
 
     # UPX 配置
-    if has_upx and mode == "small":
+    if upx_path and mode == "small":
         # 只在最小化模式使用 UPX
         print("启用 UPX 压缩")
-        cmd.extend([
-            "--upx-exclude=vcruntime140.dll",
-        ])
+        # 添加 UPX 排除列表（跳过无法压缩或不应压缩的文件）
+        upx_excludes = [
+            "vcruntime140.dll",      # Visual C++ 运行时
+            "python3.dll",           # Python 核心库（经常无法压缩）
+            "python312.dll",         # Python 版本特定库
+            "pyexpat.pyd",           # Python EXPAT 模块
+            "select.pyd",            # select 模块
+            "unicodedata.pyd",       # Unicode 数据模块
+            "_bz2.pyd",              # bz2 压缩模块
+            "_decimal.pyd",          # decimal 模块
+            "_hashlib.pyd",          # hashlib 模块
+            "_lzma.pyd",             # lzma 压缩模块
+            "_socket.pyd",           # socket 模块
+            "_ssl.pyd",              # SSL 模块
+            "libcrypto-*.dll",       # OpenSSL 加密库
+            "libssl-*.dll",          # OpenSSL SSL 库
+            "libgcc_s_seh-*.dll",    # GCC SEH 库
+            "libmp3lame-*.dll",      # MP3 LAME 库
+            "libopencore-*.dll",     # OpenCORE 库
+            "libopus-*.dll",         # Opus 音频库
+        ]
+        for exclude in upx_excludes:
+            cmd.append(f"--upx-exclude={exclude}")
+        print(f"  排除 {len(upx_excludes)} 个文件/模式")
 
     # 隐藏控制台
     cmd.append("--noconsole")
@@ -248,6 +328,8 @@ def build_macos(mode="balanced", clean=True):
     print(f"开始打包 macOS 版本 - 模式: {mode}")
     print("="*60)
 
+    system = platform.system()
+
     # 清理之前的构建
     if clean:
         for folder in ["build", "dist/CCScrcpy", "dist/CCScrcpy.app"]:
@@ -260,7 +342,7 @@ def build_macos(mode="balanced", clean=True):
 
     scrcpy_server = get_scrcpy_server()
     icon_path = get_icon_path()
-    has_upx = check_upx()
+    upx_path = check_upx()
 
     # 基础 PyInstaller 命令
     cmd = [
@@ -279,11 +361,26 @@ def build_macos(mode="balanced", clean=True):
         "--exclude-module=unittest",
         "--exclude-module=tkinter",
         "--exclude-module=Tkinter",
-        # 去除调试符号
-        "--strip",
+        # 去除调试符号（仅 Linux/macOS）
+        "--strip" if system != "Windows" else "",
         # 不包含 Python 解释器（减小体积）
-        "--noupx" if not has_upx else "",
+        "--noupx" if not upx_path else "",
     ]
+
+    # 如果 UPX 可用，添加 upx 路径
+    if upx_path:
+        upx_dir = os.path.dirname(upx_path) or os.path.dirname(os.path.abspath(upx_path))
+        if upx_dir and os.path.exists(upx_dir):
+            # Windows: 如果路径包含空格，尝试使用短路径或提示用户
+            if " " in upx_dir and system == "Windows":
+                print(f"⚠ 警告: UPX 路径包含空格: {upx_dir}")
+                print("  可能导致打包失败。建议:")
+                print("  1. 将 UPX 移动到一个没有空格的路径，如 C:\\upx\\")
+                print("  2. 或将 'Program Files' 的短路径添加到 PATH")
+                print("  3. 或使用 --noupx 参数禁用 UPX 压缩")
+                print()
+            cmd.append(f"--upx-dir={upx_dir}")
+            print(f"使用 UPX 目录: {upx_dir}")
 
     # 根据模式配置
     if mode == "small":
@@ -319,12 +416,25 @@ def build_macos(mode="balanced", clean=True):
         print(f"包含: {scrcpy_server}")
 
     # UPX 配置
-    if has_upx and mode == "small":
+    if upx_path and mode == "small":
         print("启用 UPX 压缩")
-        cmd.extend([
-            "--upx-exclude=libQt6Core.dylib",
-            "--upx-exclude=libavcodec.dylib",
-        ])
+        # 添加 UPX 排除列表（跳过无法压缩或不应压缩的文件）
+        upx_excludes = [
+            "libQt6Core.dylib",      # Qt6 核心库
+            "libQt6Gui.dylib",       # Qt6 GUI 库
+            "libQt6Widgets.dylib",   # Qt6 Widgets 库
+            "libavcodec.dylib",      # FFmpeg 编码库
+            "libavformat.dylib",     # FFmpeg 格式库
+            "libavutil.dylib",       # FFmpeg 工具库
+            "libswscale.dylib",      # FFmpeg 缩放库
+            "libcrypto.*.dylib",     # OpenSSL 加密库
+            "libssl.*.dylib",        # OpenSSL SSL 库
+            "libopencv_*.*.dylib",   # OpenCV 库
+            "libpython*.dylib",      # Python 库
+        ]
+        for exclude in upx_excludes:
+            cmd.append(f"--upx-exclude={exclude}")
+        print(f"  排除 {len(upx_excludes)} 个文件/模式")
 
     # 主程序
     cmd.append("CCScrcpy.py")
