@@ -1,17 +1,17 @@
 import time
 
-from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtCore import *
+from PySide6.QtWidgets import QApplication, QMainWindow
 
 import scrcpy
+from model.config import *
+from model.device import *
+from view.cc_com import resource_path
+from view.cc_ui import *
 from view.dialog import DeviceNameModifyDialog
 
 # cc
 from view.settings import DeviceNameSettings
-from view.cc_ui import *
-from view.cc_com import resource_path
-from model.device import *
-from model.config import *
 
 
 def map_code(code):

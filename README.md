@@ -2,13 +2,7 @@
 
 ## 依赖
 
-```shell
-python==3.10.13
-pip install PySide6==6.5.2 
-pip install adbutils==1.2.15   
-pip install opencv-python==4.9.0.80
-pip install av==9.2.0
-```
+`pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple`
 
 ## UI
 ![](./CCScrcpy_image.jpeg)
