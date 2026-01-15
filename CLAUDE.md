@@ -23,6 +23,43 @@ CCScrcpy 是一个基于 Python 的 Android 多设备投屏管理工具，支持
 python CCScrcpy.py
 ```
 
+## 打包和分发
+
+### 打包准备
+- 依赖: `pip install pyinstaller` (必须)
+- 可选: `brew install upx` (macOS) 用于减小文件体积
+- 确保 `scrcpy/scrcpy-server.jar` 存在
+- 确保图标文件存在: `res/icon.ico` (Windows), `res/icon.icns` (macOS)
+
+### 打包方式
+项目提供三种打包模式 (使用 `script/build_optimized.py`):
+
+**1. Balanced 模式 (默认, 推荐)**
+```bash
+python script/build_optimized.py --mode balanced
+```
+- 单文件, 平衡体积和启动速度 (约 70-90MB, 启动 2-3s)
+
+**2. Fast 模式 (开发测试)**
+```bash
+python script/build_optimized.py --mode fast
+```
+- 多文件, 启动最快 (启动 1-2s), 适合频繁测试
+
+**3. Small 模式 (发布分发)**
+```bash
+python script/build_optimized.py --mode small  # 需要先安装 UPX
+```
+- 单文件, UPX 压缩, 体积最小 (约 40-60MB, 启动 4-5s)
+
+### GitHub Actions 自动打包
+配置在 `.github/workflows/build.yml`, 支持:
+- 推送到 main/dev 分支自动构建
+- 创建 Release 时自动上传构建文件
+- 产物: macOS (.app), Windows (.exe), macOS DMG 安装包
+
+详见 `docs/BUILD.md`。
+
 ## 代码架构
 
 项目采用 MVC 架构模式：
@@ -85,3 +122,62 @@ python CCScrcpy.py
 - 设备投屏使用独立线程，避免阻塞 UI
 - 图像渲染通过 OpenCV 处理，支持分辨率自适应缩放
 - 支持的快捷键映射在 `map_code()` 函数中定义
+
+## 项目结构 (2024-01-15 更新)
+
+### 主要目录
+```
+ccscrcpy/
+├── CCScrcpy.py              # 主入口文件
+├── requirements.txt         # Python 依赖
+├── CLAUDE.md               # Claude Code 项目说明
+├── README.md               # 项目简介
+├── LICENSE                 # 许可证
+├── .gitignore             # Git 忽略文件
+├── .github/               # GitHub Actions 配置
+│   └── workflows/
+│       ├── build.yml      # 自动打包配置
+│       └── README.md      # Actions 说明文档
+├── docs/                  # 文档
+│   ├── BUILD.md          # 打包说明（主要文档）
+│   └── CCScrcpy_image.jpeg # 应用截图
+├── script/               # 脚本工具
+│   └── build_optimized.py # 优化版打包脚本
+├── model/                # Model 层
+│   ├── device.py         # 设备管理
+│   └── config.py         # 配置
+├── view/                # View 层
+│   ├── cc_ui.py         # 主窗口
+│   ├── cc_left_view.py  # 左侧设备列表
+│   ├── cc_right_view.py # 右侧投屏视图
+│   ├── cc_menu_bar.py   # 菜单栏
+│   ├── dialog.py        # 对话框
+│   ├── settings.py      # 设置管理
+│   └── cc_frame.py      # 事件框架
+├── scrcpy/              # Scrcpy 核心模块
+│   ├── __init__.py
+│   ├── core.py
+│   ├── control.py
+│   ├── __main__.py
+│   └── scrcpy-server.jar # Android 服务端
+└── res/                 # 资源文件
+    ├── icon.ico         # Windows 图标
+    ├── icon.icns        # macOS 图标
+    └── create_icns.py   # 图标转换工具
+```
+
+### 主要文件说明
+- **CCScrcpy.py**: 应用主入口，集成 Model 和 View，处理输入事件
+- **script/build_optimized.py**: 优化版打包脚本，支持三种打包模式
+- **docs/BUILD.md**: 打包和分发完整说明文档
+- **model/device.py**: 核心设备管理逻辑
+- **scrcpy/scrcpy-server.jar**: Android 投屏服务端（必须）
+
+### 最近修改 (2024-01-15)
+- ✅ 整理打包脚本：删除 `build.py`，保留优化版 `build_optimized.py`
+- ✅ 整理文档：删除 `BUILD_OPTIMIZED.md`，合并到 `BUILD.md`
+- ✅ 整理资源：删除冗余图标转换脚本，保留 `create_icns.py`
+- ✅ 更新文档：添加详细打包步骤、依赖说明和故障排除
+- ✅ 添加 GitHub Actions：自动打包配置 (`.github/workflows/build.yml`)
+- ✅ 更新 CLAUDE.md：添加打包和分发章节，更新项目结构说明
+
